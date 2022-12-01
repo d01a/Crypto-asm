@@ -8,7 +8,7 @@
 ExitProcess PROTO, dwExitCode:dword
 
 .data 
-S			db		256 dup(?)				; Declaring uninitialized 256 char
+S			db		259 dup(?)				; Declaring uninitialized 256 char
 key			DB		"Secret",0
 key_Length	DB		6
 i			DW		0
@@ -33,7 +33,7 @@ RC4_Init PROC
 		^
 
 		mov edi, OFFSET S		;Storing the start address of the array in the index register DI
-		mov ecx, LENGTHOF S		;storing the length of the array in ecx for loop iterations
+		mov ecx, 256			;storing the length of the array in ecx for loop iterations
 		mov eax, 0				;counter
 
 	L1:
@@ -60,10 +60,9 @@ RC4_Init PROC
 		inc i					;increment i 
 		div key_Length			;divide i with the keylength length 
 		shr ax, 8				;move the remainder to al
-		mov bx ,[edi]			;as we can't make a memory to memory transfer, use register as a temp
+		mov bl ,[edi]			;as we can't make a memory to memory transfer, use register as a temp
 		add j, bx				; j = S[i] 
-		and eax,0000FFFFh
-		mov bx ,[esi + eax]	;	
+		mov bl ,[esi + eax]	;	
 		add j,	bx				; j = S[i] + key[i%key_length] 
 		and j,	255				; j = j & 255
 		add edi, TYPE S			; &S[i+1]
