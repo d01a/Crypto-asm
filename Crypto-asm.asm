@@ -8,7 +8,7 @@
 ExitProcess PROTO, dwExitCode:dword
 
 .data 
-S			db		259 dup(?)				; Declaring uninitialized 256 char
+S			db		259 dup(?)				; Declaring uninitialized 256 char.
 key			DB		"Secret",0
 key_Length	DB		6
 i			DW		0
