@@ -95,5 +95,22 @@ swap PROC
 
 
 swap ENDP
-
+Swap PROC
+        
+		 mov edi, OFFSET S   ;Storing the start address of the array in the index register DI
+		 ;Make sure that all regs are empty
+		 mov ebx,0            
+		 mov edx,0
+		 mov cx,0
+		 mov ax,0
+		 ;get the indexes we want to swap
+		 mov bx, i         
+		 mov dx, j
+	     mov al, [edi+ebx]   ;temp=s[i]
+	     ;s[i]=s[j]
+		 mov cl,[edi+edx]    
+	     mov [edi+ebx],cl
+	     mov [edi+edx],al   ;s[j]=temp
+         ret
+Swap ENDP
 end main
