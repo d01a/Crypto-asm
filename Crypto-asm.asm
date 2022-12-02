@@ -67,9 +67,10 @@ RC4_Init PROC
 		add edi, TYPE S			; &S[i+1]
 		cmp i, cx				;check if the value of i reached its limit (256) if it reached Zero flag will be set
 		pusha
-		call swap
-		inc i					;increment i 
+		call Swap
 		popa
+		inc i					;increment i 
+		
 		jnz L2					;check if zero flag isn't set to jump to L2,if set it will continue to the next instruction
 		
 		COMMENT ^
