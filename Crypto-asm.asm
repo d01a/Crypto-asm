@@ -8,11 +8,11 @@
 ExitProcess PROTO, dwExitCode:dword
 
 .data 
-S			db		259 dup(?)				; Declaring uninitialized 256 char.
+S			db		256 dup(?)				; Declaring uninitialized 256 char
 key			DB		"Secret",0
 key_Length	DB		6
-i			DW		0
-j			DW		0
+i			DW		?
+j			DW		?
 
 .code 
 
@@ -37,9 +37,9 @@ RC4_Init PROC
 		mov eax, 0				;counter
 
 	L1:
-		mov [edi],eax			;Storing the value of i to the ith element in the array
+		mov [edi],al			;Storing the value of i to the ith element in the array
 		add edi, TYPE S			;TYPE (Return the size of a single element in the array) so we move to the next element in the array
-		inc eax					;increment counter
+		inc al					;increment counter
 		loop L1					;jump to the loop untill we make 256 iterations to break
 
 
@@ -57,7 +57,6 @@ RC4_Init PROC
 
 	L2:
 		mov ax,  i				;move the value of i to AX to be divided with key length and the value of the remainder will be stored in AH so shift right it with 8
-		inc i					;increment i 
 		div key_Length			;divide i with the keylength length 
 		shr ax, 8				;move the remainder to al
 		mov bl ,[edi]			;as we can't make a memory to memory transfer, use register as a temp
@@ -67,8 +66,10 @@ RC4_Init PROC
 		and j,	255				; j = j & 255
 		add edi, TYPE S			; &S[i+1]
 		cmp i, cx				;check if the value of i reached its limit (256) if it reached Zero flag will be set
-		;here will be the call to procedure swap (call swap)
-		
+		pusha
+		call swap
+		inc i					;increment i 
+		popa
 		jnz L2					;check if zero flag isn't set to jump to L2,if set it will continue to the next instruction
 		
 		COMMENT ^
@@ -80,5 +81,19 @@ RC4_Init PROC
 		ret
 RC4_Init ENDP
 ;RC4_Init Procedure end
+
+swap PROC
+	mov edi,OFFSET S
+	mov ebx,0
+	mov edx,0
+	mov bx,j
+	mov dx,i
+	mov al,[edi + edx]    
+	xchg al,[edi + ebx]
+	mov [edi + edx], al
+	ret
+
+
+swap ENDP
 
 end main
