@@ -83,19 +83,7 @@ RC4_Init PROC
 RC4_Init ENDP
 ;RC4_Init Procedure end
 
-swap PROC
-	mov edi,OFFSET S
-	mov ebx,0
-	mov edx,0
-	mov bx,j
-	mov dx,i
-	mov al,[edi + edx]    
-	xchg al,[edi + ebx]
-	mov [edi + edx], al
-	ret
 
-
-swap ENDP
 Swap PROC
         
 		 mov edi, OFFSET S   ;Storing the start address of the array in the index register DI
