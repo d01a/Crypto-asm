@@ -61,16 +61,15 @@ RC4_Init PROC
 		shr ax, 8				;move the remainder to al
 		mov bl ,[edi]			;as we can't make a memory to memory transfer, use register as a temp
 		add j, bx				; j = S[i] 
-		mov bl ,[esi + eax]	;	
+		mov bl ,[esi + eax]		;	
 		add j,	bx				; j = S[i] + key[i%key_length] 
 		and j,	255				; j = j & 255
 		add edi, TYPE S			; &S[i+1]
-		cmp i, cx				;check if the value of i reached its limit (256) if it reached Zero flag will be set
 		pusha
-		call Swap
+		call swap
 		popa
 		inc i					;increment i 
-		
+		cmp i, cx				;check if the value of i reached its limit (256) if it reached Zero flag will be set
 		jnz L2					;check if zero flag isn't set to jump to L2,if set it will continue to the next instruction
 		
 		COMMENT ^
@@ -79,6 +78,7 @@ RC4_Init PROC
 
 		mov i, 0				;i = 0
 		mov j, 0				;j = 0
+
 		ret
 RC4_Init ENDP
 ;RC4_Init Procedure end
