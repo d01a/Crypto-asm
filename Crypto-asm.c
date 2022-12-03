@@ -23,6 +23,7 @@ void rc4_init(unsigned char *key, unsigned int key_length) {
 
     i = j = 0;
 }
+
  
 /* PRGA */
 unsigned char rc4_output() {
