@@ -143,4 +143,28 @@ RC4_Output PROC
 		ret
 
 RC4_Output ENDP
+
+;----------------------------------------------------------------------------;
+; Part of ROT13. might be used in multiple places in the code
+; input base address is given in ESI register e.g.-> lea esi, [S] before calling
+; strlen function, return length in EAX reg -in hex- 
+; while(S[ecx] != '\0') ecx++; 
+
+
+
+strlen proc
+	   xor ecx, ecx		   	   ;strlen = 0
+	   ;lea esi, [S]		   ;move base addr of S to esi -> **this line moved to the caller function
+	   jmp L2
+    L1:
+	   add ecx,1			   ; cx++
+    L2: 
+	   mov edx, [esi + ecx]		   ; edx = s[ecx]
+	   test edx, edx		   ; testing if edx is zero, zf is set -> done b using bitwise AND 
+	   jne L1			   ; zf not set, string is not ended 
+	   mov eax, ecx
+	   ret 
+;-----------------------------------------------------------------------------;
+
+strlen endp
 end main
