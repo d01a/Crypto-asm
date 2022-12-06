@@ -167,13 +167,13 @@ RC4_Output ENDP
 strlen proc
 	   xor ecx, ecx		   	   ;strlen = 0
 	   ;lea esi, [S]		   ;move base addr of S to esi -> **this line moved to the caller function
-	   jmp L2
-    L5:
+	   jmp STRLEN_L2
+    STRLEN_L1:
 	   add ecx,1			   ; cx++
-    L2: 
-	   mov edx, [esi + ecx]		   ; edx = s[ecx]
+    STRLEN_L2: 
+	   movzx edx, BYTE PTR[esi + ecx]		   ; edx = s[ecx]
 	   test edx, edx		   ; testing if edx is zero, zf is set -> done b using bitwise AND 
-	   jne L5			   ; zf not set, string is not ended 
+	   jne STRLEN_L1			   ; zf not set, string is not ended 
 	   mov eax, ecx
 	   ret 
 ;-----------------------------------------------------------------------------;
