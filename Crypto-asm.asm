@@ -8,19 +8,23 @@
 ExitProcess PROTO, dwExitCode:dword
 
 .data 
-S			db		256 dup(?)				; Declaring uninitialized 256 char
-key			DB		"Secret",0
-plaintext	DB		256 dup(?)
-ciphertext	DB		256 dup(?)
-key_Length	DB		6
-i			DW		?
-j			DW		?
+S				DB		256 dup(?)				; Declaring uninitialized 256 char
+key				DB		"Secret",0
+plaintext		DB		"dola",0						;		256 dup(?)
+ciphertext		DB		256 dup(?)
+key_Length		DB		?
+plain_Length	DB		?
+i				DW		?
+j				DW		?
+N				DW		256
+
 
 .code 
 
 main PROC
 
 	call RC4_Init
+
 	call RC4_Output
 	pop ax
 	
@@ -41,11 +45,11 @@ RC4_Init PROC
 		mov ecx, 256			;storing the length of the array in ecx for loop iterations
 		mov eax, 0				;counter
 
-	L1:
+	Init_L1:
 		mov [edi],al			;Storing the value of i to the ith element in the array
 		add edi, TYPE S			;TYPE (Return the size of a single element in the array) so we move to the next element in the array
 		inc al					;increment counter
-		loop L1					;jump to the loop untill we make 256 iterations to break
+		loop Init_L1			;jump to the loop untill we make 256 iterations to break
 
 
 		COMMENT ^
@@ -54,17 +58,24 @@ RC4_Init PROC
 		    swap(S, i, j);
 		}
 		^
-		mov edi, OFFSET S		;Storing the start address of the array in the index register DI
-		mov esi, OFFSET key
+		mov edi, OFFSET S		;Storing the start address of array S in the index register EDI
+		mov esi, OFFSET key		;Storing the start address of array key in the index register ESI
 		mov eax, 0
 		mov ebx, 0
 		mov i,0
 		mov j,0
 		mov cx, LENGTHOF S		;initialize ecx with the number of elements  in the array
-
-	L2:
+		xor edx,edx
+	
+	Init_L2:
 		mov ax,  i				;move the value of i to AX to be divided with key length and the value of the remainder will be stored in AH so shift right it with 8
-		;call strlen
+		
+		pusha
+		mov esi, OFFSET key
+		call strlen				;calculate the length of key
+		mov key_Length,al
+		popa
+		
 		div key_Length			;divide i with the keylength length 
 		
 		shr ax, 8				;move the remainder to al
@@ -79,12 +90,12 @@ RC4_Init PROC
 		popa
 		inc i					;increment i 
 		cmp i, cx				;check if the value of i reached its limit (256) if it reached Zero flag will be set
-		jnz L2					;check if zero flag isn't set to jump to L2,if set it will continue to the next instruction
+		jnz Init_L2				;check if zero flag isn't set to jump to L2,if set it will continue to the next instruction
 		
 		COMMENT ^
 			i = j = 0;
 		^
-
+		mov ax,ax
 		ret
 RC4_Init ENDP
 ;RC4_Init Procedure end
@@ -112,23 +123,38 @@ Swap ENDP
 RC4_Output PROC
 		mov i, 0						;i = 0
 		mov j, 0						;j = 0
-		lea edi, S
+		lea edi, S						;store address of array S in edi
+		lea esi, plaintext				;load base address of plaintext in esi
 		xor eax,eax
 		xor ebx,ebx
+		
+		pusha
+		lea esi, plaintext				;load base address of plaintext in esi
 		call strlen
-		mov ecx,eax						;store length of text in ecx
+		mov plain_Length,al
+		popa
+		
 		xor edx, edx					;n (counter)
 	L_Out:
-		mov ax, i
-		mov bx, j
+		mov ax, i						;ax = i
+		mov bx, j						;bx = j
 
-		inc i							;i = i + 1
-		and i, 255						;i = (i + 1) & 255	
+		
+		inc ax							;i = i + 1
+		push dx
+		div N							;remainder stored in dx
+		mov i, dx						;i = (i + 1) % 256	
+		pop dx
 		
 		mov ax, i						;ax=i
-		mov j, bx						;j = bx
-		add bl, [edi+eax]				;j = j + S[i]
-		and bl, 255						;j = (j + S[i]) & 255
+		mov al, [edi+eax]				;ax = S[i]
+		
+		add bx, ax						;j = j + S[i]
+		mov ax,bx						;move j to ax to divide j/256
+		push dx
+		div N							;remainder stored in dx
+		mov j, dx						;store the remainder in j
+		pop dx
 
 		pusha
 		call swap						;swap S[i],S[j]
@@ -140,17 +166,24 @@ RC4_Output PROC
 		mov al, [edi + eax]				;al = S[i]
 		mov bl, [edi + ebx]				;bl = S[j]	
 		add ax,bx						;ax = S[i] + S[j]	
-		and ax,255						;ax = (S[i] + S[j]) & 255
-		mov al, [edi+eax]				;al = S[(S[i] + S[j])&255]	
+		
+		push dx
+		div N
+		mov ax, dx						;;ax = (S[i] + S[j]) % 256	
+		pop dx
+		
+		mov al, [edi+eax]				;al = S[(S[i] + S[j])%256]	
 
-		lea esi, plaintext				;load base address of plaintext in esi
 		xor bx,bx						; bx = 0
+		lea esi, plaintext				;load base address of plaintext in esi
 		mov bl, [esi + edx]				;bl = plaintext[n]	
-		xor ax,	bx						;S[(S[i] + S[j]) & 255] ^ plaintext[n]
+		xor ax,	bx						;S[(S[i] + S[j]) % 256] ^ plaintext[n]
 		lea esi, ciphertext				;load base address of ciphertext in esi
 		mov [esi + edx],al				;ciphertext[n] = S[(S[i] + S[j]) & 255] ^ plaintext[n]
 		inc dx							;n++
-		cmp dx,cx						;check if n-len=0 if so we will not jump to L_Out and this loop exit
+		
+		cmp dl,plain_Length				;check if n-len=0 if so we will not jump to L_Out and this loop exit
+		
 		jnz L_Out
 		ret
 
