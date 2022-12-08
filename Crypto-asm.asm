@@ -297,6 +297,7 @@ to64Size proc
 		jmp sizeEnd
 	inc3:
 		mov eax ,LENGTHOF input
+		sub eax, 1
 		add eax ,3
 		sub eax, edx
 		xor edx, edx 
