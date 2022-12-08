@@ -17,7 +17,7 @@ plain_Length	DB		?
 i				DW		?
 j				DW		?
 N				DW		256
-
+ROT13_str_len			DW	        0
 
 .code 
 
@@ -188,6 +188,75 @@ RC4_Output PROC
 		ret
 
 RC4_Output ENDP
+
+;----------------------------------------------------------------------------;
+; Input text base addrress is taken in ESI register 
+; Output is in EAX -> base addrress of the input
+ROT13 proc
+    push ebp				  
+    mov ebp, esp
+    xor ecx,ecx			  ; loop counter -> i=0
+    call strlen			  ;eax contains the lengthb of the text
+    mov [ROT13_str_len], eax		  ; len = strlen(text)
+    jmp Loop_cond
+
+    Loop_main:
+	   movzx edx, BYTE PTR[esi + ecx]	    ;n = text[i]
+	   ; if(n>=65 && n<=90)
+	   cmp edx, 65
+	   jl else_if
+	   cmp edx, 90 
+	   jg else_if 
+	   ; inner if
+	   ; if(n>=65 && n<=77)
+	   cmp edx, 65
+	   jl sub_13
+	   cmp edx, 77
+	   jg sub_13
+
+	   ; add 13 to the char 
+	   add edx, 13
+	   mov BYTE PTR[esi + ecx], dl			
+	   
+	   jmp Loop_inc
+
+    sub_13:
+	   sub edx,13
+	   mov BYTE PTR[esi + ecx], dl
+	   jmp Loop_inc
+
+    else_if:
+	   ; if(n>=97 && n<=122)
+	   cmp edx, 97
+	   jl Loop_inc
+	   cmp edx, 122 
+	   jg Loop_inc
+	   ; inner if
+	   ; if(n>=97 && n<=109)
+	   cmp edx, 97
+	   jl sub_13
+	   cmp edx, 109
+	   jg sub_13
+
+	   ; add 13 to the char 
+	   add edx, 13
+	   mov BYTE PTR[esi + ecx], dl			
+	   
+	   jmp Loop_inc
+
+    Loop_inc:
+	   add ecx,1 
+    Loop_cond:
+	   cmp ecx, [ROT13_str_len]
+	   jle Loop_main
+
+    mov eax, esi
+    mov esp,ebp			  ; Reset the stack pointer
+    pop ebp				  ; Restore the old frame pointer
+ROT13 endp
+
+;----------------------------------------------------------------------------;
+
 
 ;----------------------------------------------------------------------------;
 ; Part of ROT13. might be used in multiple places in the code
