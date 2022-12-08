@@ -18,8 +18,12 @@ i				DW		?
 j				DW		?
 N				DW		256
 ROT13_str_len			DW	        0
-input			DB		"abcdefg",0
+input			DB		"Hello World!",0
 size64			DD		?
+output			DB		256 dup(?)
+b64chars		DB		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",0
+len				dd		?
+b3				dd		?
 
 .code 
 
@@ -281,6 +285,85 @@ strlen proc
 ;-----------------------------------------------------------------------------;
 
 strlen endp
+
+;-----------------------------------------------------------------------------;
+
+base64 proc
+
+		call to64Size
+		mov eax,size64				
+		mov [output + eax] ,0		
+		lea esi, input
+
+		call strlen
+		mov ecx ,eax
+		mov len, ecx
+
+		mov ebx,0h		
+		mov eax,0h		
+	l1:
+		cmp eax, len
+		jge l3
+		mov dl,[input +eax]
+		inc eax
+		cmp eax, len
+		jge shiftl1
+		shl edx,8
+		mov dl, [input +eax]
+		jmp noshiftl1
+	shiftl1:
+		shl edx ,8
+	noshiftl1:
+		inc eax
+		cmp eax, len
+		jge shiftl2
+		shl edx,8
+		mov dl,[input +eax]
+		jmp noShiftl2
+	shiftl2:
+		shl edx ,8
+	noShiftl2:
+		mov b3,edx
+		shr edx,18
+		and edx,3fh
+		mov cl ,[b64chars + edx ]
+		mov [output + ebx],cl
+		inc ebx
+		mov edx, b3
+		shr edx,12
+		and edx,3fh
+		mov cl ,[b64chars + edx ]
+		mov [output + ebx],cl
+		inc ebx
+		sub eax,1
+		cmp eax,len
+		jge equalSign1
+		mov edx, b3
+		shr edx, 6
+		and edx, 3fh
+		mov cl ,[b64chars + edx ]
+		mov [output + ebx],cl
+		jmp endEqualSign1
+	equalSign1:
+		mov [output + ebx], '='
+	endEqualSign1:
+		inc ebx
+		inc eax
+		cmp eax,len
+		jge equalSign2
+		mov edx, b3
+		and edx, 3fh
+		mov cl ,[b64chars + edx]
+		mov [output + ebx],cl
+		jmp endEqualSign2
+	equalSign2:
+		mov [output + ebx], '='
+	endEqualSign2:
+		inc eax
+		inc ebx
+		jmp l1
+	l3:
+base64 endp
 
 
 to64Size proc
