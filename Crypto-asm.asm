@@ -193,11 +193,10 @@ RC4_Output ENDP
 ; Input text base addrress is taken in ESI register 
 ; Output is in EAX -> base addrress of the input
 ROT13 proc
-    push ebp				  
-    mov ebp, esp
-    xor ecx,ecx			  ; loop counter -> i=0
+	;esi must contain Base address of the text
     call strlen			  ;eax contains the lengthb of the text
     mov [ROT13_str_len], eax		  ; len = strlen(text)
+    xor ecx,ecx			  ; loop counter -> i=0
     jmp Loop_cond
 
     Loop_main:
@@ -249,10 +248,9 @@ ROT13 proc
     Loop_cond:
 	   cmp ecx, [ROT13_str_len]
 	   jle Loop_main
-
+	; return the base address of the text
     mov eax, esi
-    mov esp,ebp			  ; Reset the stack pointer
-    pop ebp				  ; Restore the old frame pointer
+
 ROT13 endp
 
 ;----------------------------------------------------------------------------;
