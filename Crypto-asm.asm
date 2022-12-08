@@ -289,6 +289,7 @@ strlen endp
 ;-----------------------------------------------------------------------------;
 
 base64 proc
+		pusha
 
 		call to64Size
 		mov eax,size64				
@@ -363,6 +364,7 @@ base64 proc
 		inc ebx
 		jmp l1
 	l3:
+		popa
 base64 endp
 
 
