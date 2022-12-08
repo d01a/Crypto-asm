@@ -18,6 +18,8 @@ i				DW		?
 j				DW		?
 N				DW		256
 ROT13_str_len			DW	        0
+input			DB		"abcdefg",0
+size64			DD		?
 
 .code 
 
@@ -279,4 +281,34 @@ strlen proc
 ;-----------------------------------------------------------------------------;
 
 strlen endp
+
+
+to64Size proc
+		pusha
+		mov eax ,LENGTHOF input
+		sub eax, 1
+		mov ebx, 3
+		xor edx, edx  
+		div ebx
+		cmp edx, 0
+		jne inc3
+		mov ebx,4
+		mul ebx
+		jmp sizeEnd
+	inc3:
+		mov eax ,LENGTHOF input
+		add eax ,3
+		sub eax, edx
+		xor edx, edx 
+		mov ebx,3
+		div ebx
+		mov ebx,4
+		mul ebx
+	sizeEnd:
+		mov size64,eax
+		popa
+to64Size endp
+
+
 end main
+ 
