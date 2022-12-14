@@ -394,7 +394,58 @@ to64Size proc
 		mov size64,eax
 		popa
 to64Size endp
+b64_decoded_size PROC
+                lea esi, [input]
+		call strlen
+		
+		;len = strlen(input)
+		
+		mov ecx ,eax
+		mov len, ecx
+		mov eax, len
+		
+		;ret = len / 4 * 3
 
+		mov ebx,4
+		div ebx
+		mov ebx,3
+		mul ebx
+        
+		;if (in == NULL)
+
+		cmp len,0
+		je r1
+
+	    ;for loop to find ret without "="
+
+		mov ecx,len
+		mov edx,'='
+	dsize_l1:
+	        dec ecx
+	    
+		;if(input[i]== '=')
+
+		cmp [ecx+input],dl
+		
+		;go to ret-- if z flag which mean it equal '='
+
+		jz dec_ret
+	
+	    ;else break	
+
+		jnz r1
+		
+		loop dsize_l1
+       dec_ret:
+	  
+	       ;ret--
+
+	       dec eax
+	       jmp dsize_l1
+	r1:
+              mov size64,eax 
+	      ret     
+b64_decoded_size endp
 
 end main
  
