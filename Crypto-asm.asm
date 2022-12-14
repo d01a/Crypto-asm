@@ -1,8 +1,8 @@
-
-
-
+INCLUDE Irvine32.inc
+INCLUDE Macros.inc
 
 .386
+
 .model flat,stdcall
 .stack 4096
 ExitProcess PROTO, dwExitCode:dword
@@ -25,16 +25,129 @@ b64chars		        DB		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 len				dd		?
 b3				dd		?
 fvalid                          DD              ?
+
+intNum    DWORD ?
+promptBad BYTE "Invalid input, please enter again",13,10,0
+
+;welcome message
+welcomemsg byte  "*****************************************************   Crypto-ASM  ****************************************************",13,10,0
+;welcomemsg byte "Welcome To Crypto-ASM ",13,10,0
+;menu choices
+choiceQues byte "Choose the algorithm",13,10,0	
+
+rc4c byte "1. RC4",13,10,0
+
+rot13c byte "2. ROT13",13,10,0
+
+base64c byte "3. BASE64",13,10,0
+
+exitc byte "Press 4 To Exit",13,10,0
+
+;error msg
+
+errormsg byte "Wrong input try again...",13,10,0
+
+; message to print out  if user wanted another algo.
+anothermsg byte "Wanna try another algorithm... ?",13,10,0
+
+; current colum , row
+x db ? ;colums
+y db ? ;rows
+  
 .code 
-
 main PROC
+;printing welcome message
+	welcome:	
+	COMMENT ^
+			  call GetMaxXY
+			  dec  dl         ;highest column number = X-1
+			  movzx eax,dl
+			  mov edx, 2h
+			  div dl
+			  mov x , al
+			 ^ 
+			  ; centering welcome message by changing cursor location
+			   mGotoxy 0,0
+			   lea edx , welcomemsg
+			   call WriteString
+			  
+	;printing out the menu
+	menu:
+				mGotoxy 0,2
+				mov edx,OFFSET choiceQues
+				call WriteString
+				mWriteLn " "
+	 again:	   mov edx,OFFSET rc4c
+				call WriteString
+				mWriteLn " "
+				mov edx,OFFSET rot13c
+				call WriteString
+				mWriteLn " "
+				lea edx , base64c
+				call WriteString
+				mWriteLn " "
+				lea edx , exitc
+				call WriteString
+				mWriteLn " "
+; reading input		
+read:  call ReadInt
+       jno  goodInput
 
-	call RC4_Init
+       mov  edx,OFFSET promptBad
+       call WriteString
+       jmp  read        ;go input again
 
-	call RC4_Output
-	pop ax
-	
+goodInput:
+       mov  intNum,eax  ;store good value
 
+; comparing input to menu
+		cmp intNum , 1
+		jne elseifbranch
+		ifbranch:           ; if input is 1  then go to rc4 function 
+		; to be edited
+		COMMENT ^   
+		   lea edx , S
+			mov ecx , BUFFERSIZE
+			call ReadString
+			lea edx , key
+			lea esi, key
+			call strlen				;calculate the length of key
+			mov key_Length,al
+			movzx ecx ,key_Length
+			call RC4_INIT
+			call RC4_Output
+			lea edx , ciphertext
+			mWriteLn " "
+			call WriteString
+	^	
+			call RC4_INIT
+			call RC4_OUTPUT
+			pop ax
+			lea edx , ciphertext
+			call WriteString
+			jmp another
+		elseifbranch:       ; if input is 2 then go to rot13 function
+			cmp intNum , 2
+			jne elseifbranch2
+			jmp another
+		elseifbranch2: ; if input is 3 , then go to base64
+			cmp intNum ,3
+			jne elseifbranch3
+			jmp finish
+		elseifbranch3: ; if input is 4 , then exit
+			cmp intNum , 4
+			jne elseifbranch4
+			jmp finish
+		elseifbranch4:      ; if input is anything else   show error message and display again
+			lea edx, errormsg
+			call WriteString
+			jmp read
+another:  ; if the user wants to try another algorithm
+	lea edx , anothermsg
+	call WriteString
+	jmp again
+
+finish:
 	invoke ExitProcess,0
 main endp
 
@@ -201,7 +314,7 @@ RC4_Output ENDP
 ROT13 proc
 	;esi must contain Base address of the text
     call strlen			  ;eax contains the lengthb of the text
-    mov [ROT13_str_len], eax		  ; len = strlen(text)
+    ;mov [ROT13_str_len], eax		  ; len = strlen(text)
     xor ecx,ecx			  ; loop counter -> i=0
     jmp Loop_cond
 
@@ -252,7 +365,7 @@ ROT13 proc
     Loop_inc:
 	   add ecx,1 
     Loop_cond:
-	   cmp ecx, [ROT13_str_len]
+	   ;cmp ecx, [ROT13_str_len]
 	   jle Loop_main
 	; return the base address of the text
     mov eax, esi
@@ -493,4 +606,3 @@ b64_isvalidchar PROC
 	   ret
     b64_isvalidchar endp
 end main
- 
