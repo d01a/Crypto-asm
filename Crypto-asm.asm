@@ -9,7 +9,7 @@ ExitProcess PROTO, dwExitCode:dword
 
 .data 
 S				DB		256 dup(?)				; Declaring uninitialized 256 char
-key				DB		"Secret",0
+key				DB		"Secret",0				; static for now
 plaintext		        DB		"dola",0						;		256 dup(?)
 ciphertext		        DB		256 dup(?)
 key_Length		        DB		?
@@ -25,13 +25,14 @@ b64chars		        DB		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 len				dd		?
 b3				dd		?
 fvalid                          DD              ?
-
+; choice variable  
 intNum    DWORD ?
 promptBad BYTE "Invalid input, please enter again",13,10,0
 
 ;welcome message
 welcomemsg byte  "*****************************************************   Crypto-ASM  ****************************************************",13,10,0
 ;welcomemsg byte "Welcome To Crypto-ASM ",13,10,0
+
 ;menu choices
 choiceQues byte "Choose the algorithm",13,10,0	
 
@@ -66,9 +67,9 @@ main PROC
 			  div dl
 			  mov x , al
 			 ^ 
-			  ; centering welcome message by changing cursor location
+			  ; to handle  cursor location if needed 
 			   mGotoxy 0,0
-			   lea edx , welcomemsg
+			   lea edx , welcomemsg 
 			   call WriteString
 			  
 	;printing out the menu
@@ -101,10 +102,10 @@ goodInput:
        mov  intNum,eax  ;store good value
 
 ; comparing input to menu
-		cmp intNum , 1
+		cmp intNum , 1 ; if input is 1 , call rc4 functions 
 		jne elseifbranch
 		ifbranch:           ; if input is 1  then go to rc4 function 
-		; to be edited
+		; to be edited(ip,op handling)
 		COMMENT ^   
 		   lea edx , S
 			mov ecx , BUFFERSIZE
@@ -120,17 +121,17 @@ goodInput:
 			mWriteLn " "
 			call WriteString
 	^	
-			call RC4_INIT
+			call RC4_INIT 
 			call RC4_OUTPUT
 			pop ax
-			lea edx , ciphertext
+			lea edx , ciphertext ; printing out the ciphertext
 			call WriteString
 			jmp another
 		elseifbranch:       ; if input is 2 then go to rot13 function
 			cmp intNum , 2
 			jne elseifbranch2
 			jmp another
-		elseifbranch2: ; if input is 3 , then go to base64
+		elseifbranch2: ; if input is 3 , then go to base64 function
 			cmp intNum ,3
 			jne elseifbranch3
 			jmp finish
