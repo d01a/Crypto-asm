@@ -634,18 +634,27 @@ b64_decoded_size PROC
 b64_decoded_size endp
 
 b64_isvalidchar PROC
-           pusha
+       pusha
 	   mov ecx,0
 	   mov edx, 0
 	   mov cx,i
+	   
+	   ;dl=input[i]
+
 	   mov dl,[input+ecx]
+	   
+	   ;if(0<=input[i]<=9)
+	   
 	   cmp edx, '0'
 	   jl con2
 	   cmp edx, '9' 
 	   jg con2
 	   
 	   jmp ret_b64_isvalidchar
-     con2:  
+     con2:
+	 
+	 ;if(A<=input[i]<=Z)
+
 	   cmp edx, 'A'
 	   jl con3
 	   cmp edx, 'Z'
@@ -653,7 +662,10 @@ b64_isvalidchar PROC
 
 	   jmp ret_b64_isvalidchar
 	   con3:
-           cmp edx, 'a'
+      
+	   ;if(a<=input[i]<=z)
+	  
+	  cmp edx, 'a'
 	   jl con4
 	   cmp edx, 'z'
 	   jg con4
@@ -668,14 +680,17 @@ b64_isvalidchar PROC
 	   cmp edx,'/'
 	   je ret_b64_isvalidchar
 	   
-	else_b64_isvalidchar:
+	   ;return   0
+	
+	 else_b64_isvalidchar:
 	   mov fvalid,0
 	   popa
 	   ret
-
+	   ;return 1
 	ret_b64_isvalidchar:
 	   mov fvalid,1
 	   popa
 	   ret
     b64_isvalidchar endp
+
 end main
