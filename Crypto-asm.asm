@@ -9,8 +9,8 @@ ExitProcess PROTO, dwExitCode:dword
 
 .data 
 S				DB		256 dup(?)				; Declaring uninitialized 256 char
-key				DB		"Secret",0				; static for now
-plaintext		        DB		"dola",0						;		256 dup(?)
+key				DB		256 dup(?)	; static for now
+plaintext		        DB			256 dup(?) ; "dola",0						
 ciphertext		        DB		256 dup(?)
 key_Length		        DB		?
 plain_Length	                DB		?
@@ -50,6 +50,17 @@ errormsg byte "Wrong input try again...",13,10,0
 
 ; message to print out  if user wanted another algo.
 anothermsg byte "Wanna try another algorithm... ?",13,10,0
+
+;output choice
+intChoc DWORD ?
+
+;key and plaintext ip
+ipstr byte " Please Enter The String You Wanna Encrypt....",13,10,0
+ipkey byte "Please Enter The Key....",13,10,0
+
+;outputmsg
+opmsg byte "Here's you CipherText ....",13,10,0
+
 
 ; current colum , row
 x db ? ;colums
@@ -91,10 +102,10 @@ main PROC
 				call WriteString
 				mWriteLn " "
 ; reading input		
-read:  call ReadInt
+read:  call ReadInt  ; if OF=0 , that means that it's a good input and eax conatins a valid binary value , sf=sign 
        jno  goodInput
 
-       mov  edx,OFFSET promptBad
+       mov  edx,OFFSET promptBad ; if it got here , that means that OF =1 and eax =0 ;(invalid input)
        call WriteString
        jmp  read        ;go input again
 
@@ -106,27 +117,88 @@ goodInput:
 		jne elseifbranch
 		ifbranch:           ; if input is 1  then go to rc4 function 
 		; to be edited(ip,op handling)
-		COMMENT ^   
-		   lea edx , S
-			mov ecx , BUFFERSIZE
-			call ReadString
-			lea edx , key
-			lea esi, key
-			call strlen				;calculate the length of key
-			mov key_Length,al
-			movzx ecx ,key_Length
-			call RC4_INIT
-			call RC4_Output
-			lea edx , ciphertext
-			mWriteLn " "
-			call WriteString
-	^	
+  COMMENT ^
+		lea edx , key
+		mov  ecx,255            ;buffer size - 1
+		call ReadString
+	
+	
+	^
+	; getting key and text from the user
+		
+		lea edx , ipstr
+		mWriteLn " "
+		call WriteString
+		mWriteLn " "
+		lea edx , plaintext ;
+		mov ecx ,255 ;buffer size - 1 (space for null char )
+		call ReadString
+		lea edx , ipkey
+		mWriteLn " "
+		call WriteString
+		mWriteLn " "
+		lea edx , key
+		mov  ecx,255            ;buffer size - 1
+		call ReadString
+		
+		   ; calling procedures after talking 
+
 			call RC4_INIT 
 			call RC4_OUTPUT
-			pop ax
-			lea edx , ciphertext ; printing out the ciphertext
+			mWriteLn " "
+			mWriteLn "Enter 0 to Show it in HEXA or 1 to Show it in ASCII"
+			mWriteLn " "
+			; reading input		
+readopchoc:  call ReadInt
+       jno  rightChoc
+	   mWriteLn " "
+       mov  edx,OFFSET promptBad
+       call WriteString
+	   mWriteLn " "
+       jmp  readopchoc        ;go input again
+
+rightChoc:
+       mov  intChoc,eax  ;store good value
+
+
+	   ; Formmating Output
+	   mWriteLn " "
+	   lea edx , opmsg
+	   call WriteString
+	   mWriteLn " "
+	   mWriteLn "***************************************"
+	   mWriteLn " "
+
+	   ; checking user choice ;( if 0 display in hexa )
+		cmp intChoc , 0
+		jne ifascii
+	ifhexa:
+			mov esi ,0
+	print_ciphertexthexa:  ;(printing out the hexa values directly from memory using WriteHexB)
+			cmp [ciphertext+esi],00 ; comparing if the value there is 00 ;(means that we finished)
+			je done
+			movzx eax , [ciphertext + esi]  ; using movzx because operands aren't from the same size
+			mov  ebx,TYPE [ciphertext + esi]
+			call WriteHexB  ; writing the byte in order to stdout
+			inc esi ; incrementing index
+			jmp print_ciphertexthexa
+
+
+	  ifascii:
+			lea edx , ciphertext ; printing out the ciphertext directly 
+			mWriteLn " "
 			call WriteString
+			mWriteLn " "
+		done:   ; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
+		mWriteLn " "
+		mWriteLn " "
+	   mWriteLn"***************************************"
+	   mWriteLn " "
 			jmp another
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 		elseifbranch:       ; if input is 2 then go to rot13 function
 			cmp intNum , 2
 			jne elseifbranch2
