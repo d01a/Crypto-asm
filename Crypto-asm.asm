@@ -420,13 +420,13 @@ RC4_Output PROC
 
 RC4_Output ENDP
 
-;----------------------------------------------------------------------------;
-; Input text base addrress is taken in ESI register 
-; Output is in EAX -> base addrress of the input
 ROT13 proc
+    push ebp				  
+    mov ebp, esp
+    xor ecx,ecx			  ; loop counter -> i=0
 	;esi must contain Base address of the text
     call strlen			  ;eax contains the lengthb of the text
-    ;mov [ROT13_str_len], eax		  ; len = strlen(text)
+    mov [ROT13_str_len], eax		  ; len = strlen(text)
     xor ecx,ecx			  ; loop counter -> i=0
     jmp Loop_cond
 
@@ -443,18 +443,15 @@ ROT13 proc
 	   jl sub_13
 	   cmp edx, 77
 	   jg sub_13
-
 	   ; add 13 to the char 
 	   add edx, 13
 	   mov BYTE PTR[esi + ecx], dl			
 	   
 	   jmp Loop_inc
-
     sub_13:
 	   sub edx,13
 	   mov BYTE PTR[esi + ecx], dl
 	   jmp Loop_inc
-
     else_if:
 	   ; if(n>=97 && n<=122)
 	   cmp edx, 97
@@ -467,34 +464,30 @@ ROT13 proc
 	   jl sub_13
 	   cmp edx, 109
 	   jg sub_13
-
 	   ; add 13 to the char 
 	   add edx, 13
 	   mov BYTE PTR[esi + ecx], dl			
 	   
 	   jmp Loop_inc
-
     Loop_inc:
 	   add ecx,1 
     Loop_cond:
-	   ;cmp ecx, [ROT13_str_len]
+	   cmp ecx, [ROT13_str_len]
 	   jle Loop_main
+
 	; return the base address of the text
     mov eax, esi
-
+    mov esp,ebp			  ; Reset the stack pointer
+    pop ebp				  ; Restore the old frame pointer
+    ret
 ROT13 endp
 
 ;----------------------------------------------------------------------------;
-
-
 ;----------------------------------------------------------------------------;
 ; Part of ROT13. might be used in multiple places in the code
 ; input base address is given in ESI register e.g.-> lea esi, [S] before calling
 ; strlen function, return length in EAX reg -in hex- 
 ; while(S[ecx] != '\0') ecx++; 
-
-
-
 strlen proc
 	   xor ecx, ecx		   	   ;strlen = 0
 	   ;lea esi, [S]		   ;move base addr of S to esi -> **this line moved to the caller function
@@ -508,7 +501,6 @@ strlen proc
 	   mov eax, ecx
 	   ret 
 ;-----------------------------------------------------------------------------;
-
 strlen endp
 
 ;-----------------------------------------------------------------------------;
