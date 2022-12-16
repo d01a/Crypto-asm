@@ -9,8 +9,8 @@ ExitProcess PROTO, dwExitCode:dword
 
 .data 
 S				DB		256 dup(?)				; Declaring uninitialized 256 char
-key				DB		256 dup(?)	; static for now
-plaintext		        DB			256 dup(?) ; "dola",0						
+key				DB		256 dup(?)	; 
+plaintext		        DB			256 dup(?) ; 					
 ciphertext		        DB		256 dup(?)
 key_Length		        DB		?
 plain_Length	                DB		?
@@ -29,15 +29,15 @@ b64invs1     	DW      62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58,59, 60, 61,
 b64invs2    	DW       5,6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1
 b64invs3        DW      26,27, 28,29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,43, 44, 45, 46, 47, 48, 49, 50, 51
 ret_of_decode   dd      ?
-out_len         dd      ?	
+out_len         dd      ?
+
 ; choice variable  
 intNum    DWORD ?
 promptBad BYTE "Invalid input, please enter again",13,10,0
 
 ;welcome message
-welcomemsg byte  "*****************************************************   Crypto-ASM  ****************************************************",13,10,0
-;welcomemsg byte "Welcome To Crypto-ASM ",13,10,0
-
+;welcomemsg byte  "*****************************************************   Crypto-ASM  ****************************************************",13,10,0
+welcomemsg byte  48 DUP ("*") , "  Welcome to Crypto-ASM  " , 47 DUP("*"),13,10,0
 ;menu choices
 choiceQues byte "Choose the algorithm",13,10,0	
 
@@ -75,22 +75,12 @@ y db ? ;rows
 main PROC
 ;printing welcome message
 	welcome:	
-	COMMENT ^
-			  call GetMaxXY
-			  dec  dl         ;highest column number = X-1
-			  movzx eax,dl
-			  mov edx, 2h
-			  div dl
-			  mov x , al
-			 ^ 
-			  ; to handle  cursor location if needed 
-			   mGotoxy 0,0
+
 			   lea edx , welcomemsg 
 			   call WriteString
 			  
 	;printing out the menu
 	menu:
-				mGotoxy 0,2
 				mov edx,OFFSET choiceQues
 				call WriteString
 				mWriteLn " "
@@ -121,30 +111,23 @@ goodInput:
 		cmp intNum , 1 ; if input is 1 , call rc4 functions 
 		jne elseifbranch
 		ifbranch:           ; if input is 1  then go to rc4 function 
-		; to be edited(ip,op handling)
-  COMMENT ^
-		lea edx , key
-		mov  ecx,255            ;buffer size - 1
-		call ReadString
-	
-	
-	^
-	; getting key and text from the user
+
+			; getting key and text from the user
 		
-		lea edx , ipstr
-		mWriteLn " "
-		call WriteString
-		mWriteLn " "
-		lea edx , plaintext ;
-		mov ecx ,255 ;buffer size - 1 (space for null char )
-		call ReadString
-		lea edx , ipkey
-		mWriteLn " "
-		call WriteString
-		mWriteLn " "
-		lea edx , key
-		mov  ecx,255            ;buffer size - 1
-		call ReadString
+			lea edx , ipstr
+			mWriteLn " "
+			call WriteString
+			mWriteLn " "
+			lea edx , plaintext ;
+			mov ecx ,255 ;buffer size - 1 (space for null char )
+			call ReadString
+			lea edx , ipkey
+			mWriteLn " "
+			call WriteString
+			mWriteLn " "
+			lea edx , key
+			mov  ecx,255            ;buffer size - 1
+			call ReadString
 		
 		   ; calling procedures after talking 
 
@@ -153,31 +136,34 @@ goodInput:
 			mWriteLn " "
 			mWriteLn "Enter 0 to Show it in HEXA or 1 to Show it in ASCII"
 			mWriteLn " "
+
+
 			; reading input		
-readopchoc:  call ReadInt
-       jno  rightChoc
-	   mWriteLn " "
-       mov  edx,OFFSET promptBad
-       call WriteString
-	   mWriteLn " "
-       jmp  readopchoc        ;go input again
+readopchoc: call ReadInt
+			jno  rightChoc
+badchoc:	mWriteLn " "
+			mov  edx,OFFSET promptBad
+			call WriteString
+			mWriteLn " "
+			jmp  readopchoc        ;go input again
 
 rightChoc:
-       mov  intChoc,eax  ;store good value
+	   mov  intChoc,eax  ;store good value
 
 
-	   ; Formmating Output
-	   mWriteLn " "
-	   lea edx , opmsg
-	   call WriteString
-	   mWriteLn " "
-	   mWriteLn "***************************************"
-	   mWriteLn " "
+	
 
 	   ; checking user choice ;( if 0 display in hexa )
 		cmp intChoc , 0
-		jne ifascii
+		jne ifascii  ; (if not 0 -"means 1 in this case"- go to ifascii cond. )
 	ifhexa:
+	 ; Formmating Output
+		   mWriteLn " "
+		   lea edx , opmsg
+		   call WriteString
+		   mWriteLn " "
+		   mWriteLn "***************************************"
+		   mWriteLn " "
 			mov esi ,0
 	print_ciphertexthexa:  ;(printing out the hexa values directly from memory using WriteHexB)
 			cmp [ciphertext+esi],00 ; comparing if the value there is 00 ;(means that we finished)
@@ -190,7 +176,16 @@ rightChoc:
 
 
 	  ifascii:
-			lea edx , ciphertext ; printing out the ciphertext directly 
+			cmp intChoc ,1  ; checking user choice  as if it's 1 , go to printing ascii cond ., if not , prompt badchoice
+			jne badchoc
+			 ; Formmating Output
+			   mWriteLn " "
+			   lea edx , opmsg
+			   call WriteString
+			   mWriteLn " "
+			   mWriteLn "***************************************"
+			   mWriteLn " "
+			lea edx , ciphertext ; printing out the ciphertext
 			mWriteLn " "
 			call WriteString
 			mWriteLn " "
@@ -202,12 +197,51 @@ rightChoc:
 			jmp another
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
 		elseifbranch:       ; if input is 2 then go to rot13 function
 			cmp intNum , 2
 			jne elseifbranch2
+			lea edx , ipstr  ; loading the variable address into edx to take input using WriteString Proc.
+			mWriteLn " "
+			call WriteString
+			mWriteLn " "
+			lea edx , plaintext ; same as ipstr
+			mov ecx ,255 ;buffer size - 1 (space for null char )
+			call ReadString
+			mWriteLn " "
+			lea edx , opmsg ; same as above , but here to print out output message to display the ciphertext
+			call WriteString
+			; some formmating
+			mWriteLn " "
+		   mWriteLn "***************************************"
+			 mWriteLn " "
+			mov ecx, 0;
+
+
+print_rot13:
+			cmp [plaintext+ecx],00  ; checking if we hit the end of the input
+			je doneop  ; if yes go to doneop label and complete formatting the op
+			lea esi , [plaintext+ecx]  ; if no  continue loading the address of the next char into esi  
+			push ecx  ; pushing ecx into stack as rot13 changes it
+			call ROT13 ; the call to rot13 after giving it the address of the char to be encrypted into esi
+			pop ecx
+			movzx eax,BYTE PTR[plaintext+ecx] ; moving the address of the char to be printed
+			call WriteChar ; printing the char using wc proc
+			inc ecx ; incrementing counter
+			jmp print_rot13  ; continue the loop
+
+			
+
+doneop:	 ;  complete formmating after finishing op
+		  mWriteLn " "
+		  mWriteLn " "
+		   mWriteLn "***************************************"
+		   mWriteLn " "
 			jmp another
+
+
+
 		elseifbranch2: ; if input is 3 , then go to base64 function
 			cmp intNum ,3
 			jne elseifbranch3
@@ -639,27 +673,18 @@ b64_decoded_size PROC
 b64_decoded_size endp
 
 b64_isvalidchar PROC
-       pusha
+           pusha
 	   mov ecx,0
 	   mov edx, 0
 	   mov cx,i
-	   
-	   ;dl=input[i]
-
 	   mov dl,[input+ecx]
-	   
-	   ;if(0<=input[i]<=9)
-	   
 	   cmp edx, '0'
 	   jl con2
 	   cmp edx, '9' 
 	   jg con2
 	   
 	   jmp ret_b64_isvalidchar
-     con2:
-	 
-	 ;if(A<=input[i]<=Z)
-
+     con2:  
 	   cmp edx, 'A'
 	   jl con3
 	   cmp edx, 'Z'
@@ -667,10 +692,7 @@ b64_isvalidchar PROC
 
 	   jmp ret_b64_isvalidchar
 	   con3:
-      
-	   ;if(a<=input[i]<=z)
-	  
-	  cmp edx, 'a'
+           cmp edx, 'a'
 	   jl con4
 	   cmp edx, 'z'
 	   jg con4
@@ -685,19 +707,17 @@ b64_isvalidchar PROC
 	   cmp edx,'/'
 	   je ret_b64_isvalidchar
 	   
-	   ;return   0
-	
-	 else_b64_isvalidchar:
+	else_b64_isvalidchar:
 	   mov fvalid,0
 	   popa
 	   ret
-	   ;return 1
+
 	ret_b64_isvalidchar:
 	   mov fvalid,1
 	   popa
 	   ret
     b64_isvalidchar endp
-    b64_decode  PROC
+	 b64_decode  PROC
         lea esi, [input]
 		call strlen             ;len = strlen(input)
 		mov len,eax
@@ -766,5 +786,4 @@ b64_isvalidchar PROC
  
 
 b64_decode  endp
-
 end main
