@@ -17,7 +17,7 @@ plain_Length	                DB		?
 i				DW		?
 j				DW		?
 N				DW		256
-ROT13_str_len			DW	        0
+ROT13_str_len			DD	        0
 input			        DB		"Hello World!",0
 size64			        DD		?
 output			        DB		256 dup(?)
@@ -217,23 +217,12 @@ rightChoc:
 		   mWriteLn "***************************************"
 			 mWriteLn " "
 			mov ecx, 0;
+		; just passin the base address of the string  to be encrypted 
+			lea esi , plaintext
+			call ROT13
+			mov edx, eax  ; getting the address of the encrypted string to be printed out
+			call WriteString
 
-
-print_rot13:
-			cmp [plaintext+ecx],00  ; checking if we hit the end of the input
-			je doneop  ; if yes go to doneop label and complete formatting the op
-			lea esi , [plaintext+ecx]  ; if no  continue loading the address of the next char into esi  
-			push ecx  ; pushing ecx into stack as rot13 changes it
-			call ROT13 ; the call to rot13 after giving it the address of the char to be encrypted into esi
-			pop ecx
-			movzx eax,BYTE PTR[plaintext+ecx] ; moving the address of the char to be printed
-			call WriteChar ; printing the char using wc proc
-			inc ecx ; incrementing counter
-			jmp print_rot13  ; continue the loop
-
-			
-
-doneop:	 ;  complete formmating after finishing op
 		  mWriteLn " "
 		  mWriteLn " "
 		   mWriteLn "***************************************"
