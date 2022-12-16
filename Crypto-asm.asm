@@ -25,6 +25,11 @@ b64chars		        DB		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 len				dd		?
 b3				dd		?
 fvalid                          DD              ?
+b64invs1     	DW      62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58,59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4
+b64invs2    	DW       5,6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1
+b64invs3        DW      26,27, 28,29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,43, 44, 45, 46, 47, 48, 49, 50, 51
+ret_of_decode   dd      ?
+out_len         dd      ?	
 ; choice variable  
 intNum    DWORD ?
 promptBad BYTE "Invalid input, please enter again",13,10,0
@@ -692,5 +697,74 @@ b64_isvalidchar PROC
 	   popa
 	   ret
     b64_isvalidchar endp
+    b64_decode  PROC
+        lea esi, [input]
+		call strlen             ;len = strlen(input)
+		mov len,eax
+		cmp len,0
+		je ret0
+		lea esi, [output]
+        call strlen 
+        mov out_len ,eax
+        cmp out_len,0          	
+        je ret0     	  
+        call b64_decoded_size 
+		mov ebx,size64
+		cmp out_len,ebx
+	    jg ret0
+		mov eax,len
+		mov ebx,4
+		div ebx
+		cmp edx,0
+		jne ret0
+	    mov i,0 
+		mov ecx,len
+	decode_l1:
+         call b64_isvalidchar
+		 inc i
+		 cmp fvalid,0
+		 je ret0
+		 loop decode_l1
+                 mov i,0
+	         mov j,0
+	        mov ebx,0
+	        mov bl,input
+	        decode_l2:
+               mov edx,0
+	      mov dx,[ebx+i]
+	       sub edx,43
+    b64in:
+	     cmp edx,27
+	     jl value1
+	     cmp edx,54
+	     jl value2
+	     jg value3
+	
+	value1:
+	    mov ecx,0
+	    mov cx,b64invs1
+	    mov eax,[ecx+edx]       
+            jmp aft_v	
+	value2:
+	   mov ecx,0
+	   sub edx,27
+	   mov cx,b64invs2
+       mov eax,[ecx+edx]
+	   jmp aft_v
+	value3:
+	   mov ecx,0
+	   sub edx,54
+	   mov cx,b64invs3
+           mov eax,[ecx+edx]
+	aft_v:    
+	
+	
+	ret0:
+	    mov ret_of_decode,0
+		ret
+		
+ 
+
+b64_decode  endp
 
 end main
