@@ -18,7 +18,7 @@ i				DW		?
 j				DW		?
 N				DW		256
 ROT13_str_len			DD	        0
-input			        DB		"Hello World!",0
+input			        DB			256 dup(?) ; 
 size64			        DD		?
 output			        DB		256 dup(?)
 b64chars		        DB		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",0
@@ -63,6 +63,15 @@ intChoc DWORD ?
 ipstr byte " Please Enter The String You Wanna Encrypt....",13,10,0
 ipkey byte "Please Enter The Key....",13,10,0
 
+
+;base64 ipmsg ; choice msg 
+base64msg byte "Do you Wanna Encode or Decode ? ",13,10,0
+ende_msg byte "Enter 0 to Encode , 1 to Decode .... ",13,10,0
+
+;base64 choice var
+endeVar DWORD ?
+
+
 ;outputmsg
 opmsg byte "Here's you CipherText ....",13,10,0
 
@@ -70,7 +79,10 @@ opmsg byte "Here's you CipherText ....",13,10,0
 ; current colum , row
 x db ? ;colums
 y db ? ;rows
-  
+
+
+
+ ; Code Section 
 .code 
 main PROC
 ;printing welcome message
@@ -151,8 +163,6 @@ rightChoc:
 	   mov  intChoc,eax  ;store good value
 
 
-	
-
 	   ; checking user choice ;( if 0 display in hexa )
 		cmp intChoc , 0
 		jne ifascii  ; (if not 0 -"means 1 in this case"- go to ifascii cond. )
@@ -189,12 +199,14 @@ rightChoc:
 			mWriteLn " "
 			call WriteString
 			mWriteLn " "
-		done:   ; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
-		mWriteLn " "
-		mWriteLn " "
-	   mWriteLn"***************************************"
-	   mWriteLn " "
-			jmp another
+
+
+done:	  ; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
+			mWriteLn " "
+			mWriteLn " "
+		   mWriteLn"***************************************"
+		   mWriteLn " "
+				jmp another
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -229,12 +241,79 @@ rightChoc:
 		   mWriteLn " "
 			jmp another
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 		elseifbranch2: ; if input is 3 , then go to base64 function
 			cmp intNum ,3
 			jne elseifbranch3
-			jmp finish
+			lea edx , base64msg  ; loading the variable address into edx to take input using WriteString Proc.
+			mWriteLn " "
+			call WriteString
+			mWriteLn " "
+			lea edx , ende_msg  ; loading the variable address into edx to take input using WriteString Proc.
+			mWriteLn " "
+			call WriteString
+			mWriteLn " "
+						; reading input		
+						endeChoc: call ReadInt
+									jno  endeGoodChoc
+						endeBadchoc:	mWriteLn " "
+									mov  edx,OFFSET promptBad
+									call WriteString
+									mWriteLn " "
+									jmp  endeChoc        ;go input again
+
+						endeGoodChoc:
+								mov  endeVar,eax  ;store good value
+
+
+	   ; checking user choice ;( if 0 , call Encode Function )
+			cmp endeVar , 0
+			jne decode  ; (if not 0 -"means 1 in this case"- go to Decode Function )
+			mWriteLn " "
+			mWriteLn " "		
+			mWriteLn "Enter the Text You Wanna Encode.... "
+			mWriteLn " "
+			lea edx , input ; putting the input buffer address into edx to call Read String
+			mov ecx ,255 ;buffer size - 1 (space for null char ) 
+			call ReadString
+			call base64
+			jmp  b64done
+
+		  decode:
+			cmp endeVar ,1  ; checking user choice  as if it's 1 , go to printing ascii cond ., if not , prompt badchoice
+			jne endeBadchoc ; if the user entered a value other than 0,1  just go and prompt "Bad Prompt" and ask again for the input
+			mWriteLn " "
+			mWriteLn "Enter the Text You Wanna Decode.... "
+			mWriteLn " "
+			lea edx , input ; same as base64msg
+			mov ecx ,255 ;buffer size - 1 (space for null char )
+			call ReadString
+			call  b64_decode
+
+
+
+     
+b64done:   ; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
+					 ; Formmating Output
+					
+					
+					mWriteLn " "
+ 					mWriteLn " "
+					lea edx , opmsg
+					call WriteString
+					mWriteLn " "
+					mWriteLn "***************************************"
+					mWriteLn " "
+					lea edx , output
+					call WriteString
+					mWriteLn " "
+					mWriteLn " "
+				   mWriteLn"***************************************"
+				   mWriteLn " "
+		   		jmp another
+		
 		elseifbranch3: ; if input is 4 , then exit
 			cmp intNum , 4
 			jne elseifbranch4
