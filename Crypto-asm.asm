@@ -23,15 +23,17 @@ size64			        DD		?
 output			        DB		256 dup(?)
 b64chars		        DB		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",0
 len				dd		?
+out_len                         dd	        ?
 b3				dd		?
-fvalid                          DD              ?
-b64invs1     	DW      62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58,59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4
-b64invs2    	DW       5,6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1
-b64invs3        DW      26,27, 28,29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,43, 44, 45, 46, 47, 48, 49, 50, 51
-ret_of_decode   dd      ?
-out_len         dd      ?
-ret_of_b64in     dd     ?
-v                dd     ?
+b64invs1     	Db      62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58,59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4
+b64invs2    	Db       5,6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1
+b64invs3        Db      26,27, 28,29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,43, 44, 45, 46, 47, 48, 49, 50, 51
+fvalid          DD      ?
+ret_of_decode      dd      ? 
+ret_of_b64in     dd        ?
+v                dd        ?
+i_dec            dw       ?
+j_dec            dw        ?
 ; choice variable  
 intNum    DWORD ?
 promptBad BYTE "Invalid input, please enter again",13,10,0
@@ -811,23 +813,29 @@ b64_isvalidchar PROC
 	   popa
 	   ret
     b64_isvalidchar endp
-	b64_decode  PROC
+b64_decode  PROC
+    push ebp				  
+    mov ebp, esp
         lea esi, [input]
 		call strlen             ;len = strlen(input)
 		mov len,eax
 		cmp len,0
 		je ret0
-		lea esi, [output]
-        call strlen 
-        mov out_len ,eax
-        cmp out_len,0          	
-        je ret0     	  
-        call b64_decoded_size 
+		call b64_decoded_size
 		mov ebx,size64
-		cmp out_len,ebx
-	    jg ret0
+		mov [output+ebx],0
+        ;lea esi, [output]
+        ;call strlen 
+        ;mov out_len ,eax
+        ;cmp out_len,0          	
+        ;je ret0     	  
+        ;call b64_decoded_size 
+		; mov ebx,size64
+		; cmp out_len,ebx
+	    ; jg ret0
 		mov eax,len
 		mov ebx,4
+		mov edx,0
 		div ebx
 		cmp edx,0
 		jne ret0
@@ -839,32 +847,39 @@ b64_isvalidchar PROC
 		 cmp fvalid,0
 		 je ret0
 		 loop decode_l1
-         mov i,0
-	    mov j,0
+         mov i_dec,0
+	    mov j_dec,0
+	    decode_l2:
 	    mov ebx,0
-	    mov bl,input
-	   decode_l2:
+	    lea ebx,[input]
         mov edx,0
-	    mov dx,[ebx+i]
-	    sub edx,43
+	    mov esi,0
+	    mov si,i_dec
+	    mov dl,[ebx+esi]
+		sub dl,43
         call b64in 
 	    shl eax,6
 	    push eax
 	    mov edx,0
-		mov dx,[ebx+i+1]
+		mov esi,0
+		mov si,i_dec
+		mov dl,[ebx+esi+1]
 		sub edx,43
 		call b64in
 		mov ret_of_b64in,eax
 		pop eax
 		or eax,ret_of_b64in
         mov edx,0
-		mov dx,[ebx+i+2]
+		mov esi,0
+		mov si,i_dec
+		mov dl,[ebx+esi+2]
 		cmp edx,'='
 		jne con1_dec
 		shl eax,6
       aft_j1:
 	     mov edx,0
-         mov dx,[ebx+i+3]
+         mov si,i_dec
+		 mov dl,[ebx+esi+3]
 		 cmp edx,'='
 		 jne con2_dec
 		 shl eax,6  
@@ -875,6 +890,7 @@ b64_isvalidchar PROC
 		 call b64in
 		 mov ret_of_b64in,eax
 		 pop eax
+		 shl eax,6
 		 or eax,ret_of_b64in
 		 jmp aft_j1
     con2_dec: 
@@ -883,88 +899,111 @@ b64_isvalidchar PROC
 		 call b64in
 		 mov ret_of_b64in,eax
 		 pop eax
+		 shl eax,6
 		 or eax,ret_of_b64in
-		 mov v,eax
+ 
 	aft_con:
-         mov ebx,0
-		 mov bl,[output] 	     
+        mov v,eax
+		mov ebx,0
+		 lea ebx,[output] 	     
 		 shr eax,16
 		 and eax,255
 		 mov esi,0
-		 mov si,j
+		 mov si,j_dec
 		 mov [ebx+esi],eax
 		 mov ebx,0
-		 mov bl,[input]
-		 cmp [ebx+i+2],'='
+		 lea ebx,[input]  
+		 mov edi,0
+		 mov di,i_dec
+		 push ebx
+		 mov bl,[ebx+edi+2]
+         cmp bl,'='
+		 pop ebx
 		 jne out_con1
+ 
      ret_from_con1:
 	     mov ebx,0
-		 mov bl,[input]
-		 cmp [ebx+i+3],"="
+		 lea ebx,[input] 
+         mov edi,0
+		 mov di,i_dec
+		 push ebx
+		 mov bl,[ebx+edi+3]
+         cmp bl,'='
 		 jne out_con2
+		 pop edx
          jmp end_of_l2
   out_con1:
 	   mov eax,v
 	   shr eax,8
 	   and eax,255
 	   mov ebx,0
-	   mov bl,[output] 	
+	   lea ebx,[output]  	
 	   mov esi,0
-	   mov si,j
+	   mov si,j_dec
 	   mov [ebx+esi+1],eax
 	   jmp ret_from_con1
  out_con2: 
        mov eax,v
 	   and eax,255
 	   mov ebx,0
-	   mov bl,[output] 
+	  lea ebx,[output] 
 	   mov esi,0
-	   mov si,j
+	   mov si,j_dec
 	   mov [ebx+esi+2],eax
 end_of_l2:
        mov eax,0
-	   mov ax,i
+	   mov ax,i_dec
 	   add eax,4
-	   add j,3
+	   mov i_dec,ax
+	   add j_dec,3
 	   cmp eax,len
 	   jl decode_l2
+	   je ret1
 	   jg ret1 
-	
+ 
 	ret0:
 	    mov ret_of_decode,0
+	     mov esp,ebp			  ; Reset the stack pointer
+		pop ebp
 		ret
-		
+ 
     ret1:
 	    mov ret_of_decode,1
+	    mov esp,ebp			  ; Reset the stack pointer
+		pop ebp
 		ret
-		
-
-   b64_decode  endp
-    b64in PROC
-	   cmp edx,27
+ 
+ 
+b64_decode  endp
+ b64in PROC
+	   cmp dl,27
 	   jl value1
 	   cmp edx,54
 	   jl value2
 	   jg value3
-	
+ 
 	value1:
-	    mov ecx,0
-	   mov cx,b64invs1
-	   mov eax,[ecx+edx]       
+	   mov ecx,0
+	   lea ecx,[b64invs1]
+	   xor eax,eax
+	   mov al,[ecx+edx]       
        ret	
 	value2:
 	   mov ecx,0
 	   sub edx,27
-	   mov cx,b64invs2
-       mov eax,[ecx+edx]
+	   lea ecx,[b64invs2]
+	   xor eax,eax
+       mov al,[ecx+edx]
 	   ret
 	value3:
 	   mov ecx,0
 	   sub edx,54
-	   mov cx,b64invs3
-		mov eax,[ecx+edx]
+	   lea ecx,[b64invs3]
+	   xor eax,eax
+       mov al,[ecx+edx]
 	   ret
-   b64in endp
+b64in endp
+
  
 
 ;-----------------------------
