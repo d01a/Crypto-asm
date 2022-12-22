@@ -32,10 +32,14 @@ ret_of_decode   dd      ?
 out_len         dd      ?
 ret_of_b64in     dd     ?
 v                dd     ?
-
 ; choice variable  
 intNum    DWORD ?
 promptBad BYTE "Invalid input, please enter again",13,10,0
+;again var
+flag byte 0
+
+; again 
+againVar DWORD ?
 
 ;welcome message
 ;welcomemsg byte  "*****************************************************   Crypto-ASM  ****************************************************",13,10,0
@@ -64,7 +68,7 @@ intChoc DWORD ?
 ;key and plaintext ip
 ipstr byte " Please Enter The String You Wanna Encrypt....",13,10,0
 ipkey byte "Please Enter The Key....",13,10,0
-
+ipkey1 byte "Please Enter The New Key....",13,10,0
 
 ;base64 ipmsg ; choice msg 
 base64msg byte "Do you Wanna Encode or Decode ? ",13,10,0
@@ -75,13 +79,7 @@ endeVar DWORD ?
 
 
 ;outputmsg
-opmsg byte "Here's you CipherText ....",13,10,0
-
-
-; current colum , row
-x db ? ;colums
-y db ? ;rows
-
+opmsg byte "Here's Your CipherText ....",13,10,0
 
 
  ; Code Section 
@@ -110,16 +108,11 @@ main PROC
 				lea edx , exitc
 				call WriteString
 				mWriteLn " "
-; reading input		
-read:  call ReadInt  ; if OF=0 , that means that it's a good input and eax conatins a valid binary value , sf=sign 
-       jno  goodInput
-
-       mov  edx,OFFSET promptBad ; if it got here , that means that OF =1 and eax =0 ;(invalid input)
-       call WriteString
-       jmp  read        ;go input again
-
-goodInput:
-       mov  intNum,eax  ;store good value
+				jmp inread
+noinread: mWriteLn "Wrong Input Try Again..."
+ ; getting user input in intNum variable
+inread:		mov ebx, OFFSET intNum
+		call reading
 
 ; comparing input to menu
 		cmp intNum , 1 ; if input is 1 , call rc4 functions 
@@ -127,8 +120,19 @@ goodInput:
 		ifbranch:           ; if input is 1  then go to rc4 function 
 
 			; getting key and text from the user
+			cmp flag ,1 
+			jne normalrc4		
+			mWriteLn "Enter 1 To Use The old output again , or 2 to Use New Input..."
+			jmp newrc4
+			
 		
-			lea edx , ipstr
+notoldrc4:	mWriteLn "Wrong Input Try Again .... "
+newrc4:		mov ebx , OFFSET againVar
+			call reading
+
+			cmp againVar ,2
+			jne mvopiprc4
+normalrc4:		lea edx , ipstr
 			mWriteLn " "
 			call WriteString
 			mWriteLn " "
@@ -136,7 +140,21 @@ goodInput:
 			mov ecx ,255 ;buffer size - 1 (space for null char )
 			call ReadString
 			lea edx , ipkey
-			mWriteLn " "
+			jmp nomvrc4
+mvopiprc4:	
+			cmp againVar , 1
+			jne	notoldrc4
+
+			; op should be moved to ip here
+			mov eax, OFFSET ciphertext
+			mov ebx , OFFSET plaintext
+			call copystr
+				
+			
+
+
+     	    lea edx , ipkey1
+nomvrc4:		mWriteLn " "
 			call WriteString
 			mWriteLn " "
 			lea edx , key
@@ -150,19 +168,11 @@ goodInput:
 			mWriteLn " "
 			mWriteLn "Enter 0 to Show it in HEXA or 1 to Show it in ASCII"
 			mWriteLn " "
+			jmp hexorasc
 
-
-			; reading input		
-readopchoc: call ReadInt
-			jno  rightChoc
-badchoc:	mWriteLn " "
-			mov  edx,OFFSET promptBad
-			call WriteString
-			mWriteLn " "
-			jmp  readopchoc        ;go input again
-
-rightChoc:
-	   mov  intChoc,eax  ;store good value
+nohexorasc: 	mWriteLn "Wrong Input Try Again .... "
+hexorasc:	mov ebx, OFFSET intChoc
+			call reading
 
 
 	   ; checking user choice ;( if 0 display in hexa )
@@ -189,7 +199,7 @@ rightChoc:
 
 	  ifascii:
 			cmp intChoc ,1  ; checking user choice  as if it's 1 , go to printing ascii cond ., if not , prompt badchoice
-			jne badchoc
+			jne nohexorasc
 			 ; Formmating Output
 			   mWriteLn " "
 			   lea edx , opmsg
@@ -203,7 +213,12 @@ rightChoc:
 			mWriteLn " "
 
 
-done:	  ; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
+done:	  
+			mov eax, OFFSET ciphertext
+			mov ebx , OFFSET plaintext
+			call copystr
+			mov flag,1
+			; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
 			mWriteLn " "
 			mWriteLn " "
 		   mWriteLn"***************************************"
@@ -216,6 +231,19 @@ done:	  ; some formmating and after finishing it jumps to ("another" label)  to 
 		elseifbranch:       ; if input is 2 then go to rot13 function
 			cmp intNum , 2
 			jne elseifbranch2
+			cmp flag ,1
+			jne normalrot13
+			mWriteLn "Enter 1 To Use The old output again , or 2 to Use New Input..."
+			jmp newrot13
+notoldrot13:	
+			mWriteLn "Wrong Input Try Again .... "
+newrot13:		
+			mov ebx , OFFSET againVar
+			call reading
+			cmp againVar,2
+			jne mvopiprot13
+
+normalrot13:
 			lea edx , ipstr  ; loading the variable address into edx to take input using WriteString Proc.
 			mWriteLn " "
 			call WriteString
@@ -223,7 +251,7 @@ done:	  ; some formmating and after finishing it jumps to ("another" label)  to 
 			lea edx , plaintext ; same as ipstr
 			mov ecx ,255 ;buffer size - 1 (space for null char )
 			call ReadString
-			mWriteLn " "
+mvopiprot13:mWriteLn " "
 			lea edx , opmsg ; same as above , but here to print out output message to display the ciphertext
 			call WriteString
 			; some formmating
@@ -232,15 +260,23 @@ done:	  ; some formmating and after finishing it jumps to ("another" label)  to 
 			 mWriteLn " "
 			mov ecx, 0;
 		; just passin the base address of the string  to be encrypted 
-			lea esi , plaintext
+       	lea esi , plaintext
 			call ROT13
-			mov edx, eax  ; getting the address of the encrypted string to be printed out
+			mov edx, DWORD PTR[ciphertext] ; getting the address of the encrypted string to be printed out
 			call WriteString
-
 		  mWriteLn " "
 		  mWriteLn " "
 		   mWriteLn "***************************************"
 		   mWriteLn " "
+
+
+		   ; op should be moved to ip here
+				mov eax, OFFSET ciphertext
+				mov ebx , OFFSET plaintext
+				call copystr
+
+			mov flag,1
+
 			jmp another
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -257,17 +293,12 @@ done:	  ; some formmating and after finishing it jumps to ("another" label)  to 
 			mWriteLn " "
 			call WriteString
 			mWriteLn " "
-						; reading input		
-						endeChoc: call ReadInt
-									jno  endeGoodChoc
-						endeBadchoc:	mWriteLn " "
-									mov  edx,OFFSET promptBad
-									call WriteString
-									mWriteLn " "
-									jmp  endeChoc        ;go input again
+			call enorde
 
-						endeGoodChoc:
-								mov  endeVar,eax  ;store good value
+noenorde: mWriteLn "Wrong Input Try Again .... "
+						; reading input		
+enorde:					mov ebx , OFFSET endeVar
+						call reading
 
 
 	   ; checking user choice ;( if 0 , call Encode Function )
@@ -281,11 +312,12 @@ done:	  ; some formmating and after finishing it jumps to ("another" label)  to 
 			mov ecx ,255 ;buffer size - 1 (space for null char ) 
 			call ReadString
 			call base64
+
 			jmp  b64done
 
 		  decode:
 			cmp endeVar ,1  ; checking user choice  as if it's 1 , go to printing ascii cond ., if not , prompt badchoice
-			jne endeBadchoc ; if the user entered a value other than 0,1  just go and prompt "Bad Prompt" and ask again for the input
+			jne noenorde ; if the user entered a value other than 0,1  just go and prompt "Bad Prompt" and ask again for the input
 			mWriteLn " "
 			mWriteLn "Enter the Text You Wanna Decode.... "
 			mWriteLn " "
@@ -308,22 +340,24 @@ b64done:   ; some formmating and after finishing it jumps to ("another" label)  
 					mWriteLn " "
 					mWriteLn "***************************************"
 					mWriteLn " "
-					lea edx , output
+					lea edx , ciphertext
 					call WriteString
 					mWriteLn " "
 					mWriteLn " "
 				   mWriteLn"***************************************"
 				   mWriteLn " "
-		   		jmp another
+				   	; op should be moved to ip here
+					; to be done
+				
+				   mov flag,1
+	   		jmp another
 		
 		elseifbranch3: ; if input is 4 , then exit
 			cmp intNum , 4
 			jne elseifbranch4
 			jmp finish
 		elseifbranch4:      ; if input is anything else   show error message and display again
-			lea edx, errormsg
-			call WriteString
-			jmp read
+			jmp noinread
 another:  ; if the user wants to try another algorithm
 	lea edx , anothermsg
 	call WriteString
@@ -481,10 +515,8 @@ RC4_Output PROC
 		xor ax,	bx						;S[(S[i] + S[j]) % 256] ^ plaintext[n]
 		lea esi, ciphertext				;load base address of ciphertext in esi
 		mov [esi + edx],al				;ciphertext[n] = S[(S[i] + S[j]) & 255] ^ plaintext[n]
-		inc dx							;n++
-		
+		inc dx							;n++	
 		cmp dl,plain_Length				;check if n-len=0 if so we will not jump to L_Out and this loop exit
-		
 		jnz L_Out
 		ret
 
@@ -546,7 +578,7 @@ ROT13 proc
 	   jle Loop_main
 
 	; return the base address of the text
-    mov eax, esi
+    mov DWORD PTR [ciphertext], esi
     mov esp,ebp			  ; Reset the stack pointer
     pop ebp				  ; Restore the old frame pointer
     ret
@@ -779,7 +811,7 @@ b64_isvalidchar PROC
 	   popa
 	   ret
     b64_isvalidchar endp
-    b64_decode  PROC
+	b64_decode  PROC
         lea esi, [input]
 		call strlen             ;len = strlen(input)
 		mov len,eax
@@ -908,7 +940,6 @@ end_of_l2:
 		
 
    b64_decode  endp
-
     b64in PROC
 	   cmp edx,27
 	   jl value1
@@ -917,7 +948,7 @@ end_of_l2:
 	   jg value3
 	
 	value1:
-	   mov ecx,0
+	    mov ecx,0
 	   mov cx,b64invs1
 	   mov eax,[ecx+edx]       
        ret	
@@ -931,7 +962,55 @@ end_of_l2:
 	   mov ecx,0
 	   sub edx,54
 	   mov cx,b64invs3
-       mov eax,[ecx+edx]
+		mov eax,[ecx+edx]
 	   ret
    b64in endp
+ 
+
+;-----------------------------
+;reading int.  procedure
+;Receives: address of variable in ebx
+;returns ; the value in the address ob ebx
+;POST COND. : value taken 
+;-----------------------------
+reading proc
+	push eax
+	; reading input		
+read:  call ReadInt  ; if OF=0 , that means that it's a good input and eax conatins a valid binary value , sf=sign 
+       jno  goodInput
+	   mWriteLn" "
+       mov  edx,OFFSET promptBad ; if it got here , that means that OF =1 and eax =0 ;(invalid input)
+	   mWriteLn" "
+       call WriteString
+       jmp  read        ;go input again
+
+goodInput:
+       mov  [ebx],eax  ;store good value
+	   pop eax
+	   ret
+reading endp
+;-----------------------------
+;copy a string  procedure
+;Receives: addresses of the two strings in eax, ebx 
+;returns ; none
+;POST COND. : string copied to the address in ebx 
+;-----------------------------
+copystr proc
+	cld
+	push esi
+	push ecx
+	push edi
+	mov esi , eax
+	call strlen
+	movzx ecx, al
+	mov edi , ebx 
+	rep  movsb
+	pop edi
+	pop ecx 
+	pop esi
+	ret
+
+copystr endp
+
+
 end main
