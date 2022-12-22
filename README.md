@@ -34,7 +34,9 @@ Cyberchef output
 
 
 <hr>
+
 ### Brief Description
+
 1. ROT13
 is a simple letter substitution cipher that replaces a letter with the 13th letter after it in the alphabet 
 Because there are 26 letters (2×13) in the basic Latin alphabet, ROT13 is its own inverse; that is, to undo ROT13, the same algorithm is applied, so the same action can be used for encoding and decoding.
@@ -122,6 +124,7 @@ Each Base64 digit can take on 64 different values, encoding 6 bits of data. Whic
 <hr>
 
 ## Team Members
+
 1. [Ibrahim Yasser](https://github.com/ibrahemyasser)
 2. [Ahmed Sayed](https://github.com/ahmed1958)
 3. [Ahmed Mohammed Awwad](https://github.com/Ahmed-Awwad99)
