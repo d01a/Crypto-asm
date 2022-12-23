@@ -98,5 +98,63 @@ void ROT13(char *text){
 	}
 }
 
+size_t b64_encoded_size(size_t inlen)
+{
+	size_t ret;
+
+	ret = inlen;
+	if (inlen % 3 != 0)         //7%3 = 1 !=0
+		ret += 3 - (inlen % 3); // 7 + 3 => 10-(7%3) ==> 10 - 1 = 9 #
+	ret /= 3;                   // 9/3 = 3 
+	ret *= 4;                   // 3*4 =12 # -->size<--
+
+	return ret;
+}
+
+
+
+const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+char *b64_encode(const unsigned char *in, size_t len)
+{
+	char   *out;
+	size_t  elen;
+	size_t  i;
+	size_t  j;
+	size_t  v;
+
+	if (in == NULL || len == 0)
+		return NULL;
+
+	elen = b64_encoded_size(len); 
+	out  = malloc(elen+1);
+	out[elen] = '\0';
+
+	for (i=0, j=0; i<len; i+=3, j+=4) {// len --> size of the input ex: "Ahmed" --> 5 #
+		v = in[i];
+		v = i+1 < len ? v << 8 | in[i+1] : v << 8;  1111 1111 0000 0000
+		v = i+2 < len ? v << 8 | in[i+2] : v << 8;                 1111 1111
+                                                    1111 1111 1111 1111 0000 0000 
+                                                    1                    1111 1111
+                                                    
+
+		out[j]   = b64chars[(v >> 18) & 0x3F];      0011 1111  // 3f --> 0011 1111
+		out[j+1] = b64chars[(v >> 12) & 0x3F];
+		if (i+1 < len) {
+			out[j+2] = b64chars[(v >> 6) & 0x3F];
+		} else {
+			out[j+2] = '=';
+		}
+		if (i+2 < len) {
+			out[j+3] = b64chars[v & 0x3F];
+		} else {
+			out[j+3] = '=';
+		}
+	}
+
+	return out;
+}
+
+
 
 
