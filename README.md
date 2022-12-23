@@ -149,6 +149,8 @@ Each Base64 digit can take on 64 different values, encoding 6 bits of data. Whic
 |15	|001111| P| 31|	011111|	f|  47	|101111| v|	63|	111111|/|
 |Padding|=|
 
+![base](img/base64.png)
+
 <hr>
 
 ## Team Members
