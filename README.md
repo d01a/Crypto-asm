@@ -84,7 +84,9 @@ void ROT13(char *text){
 
 2. RC4 
 
-![RC4](img/55-2.png)
+<p align="center">
+	<img src = "img/55-2.png"/>
+</p>
 
 RC4, is a stream cipher created in 1987. A stream cipher is a type of cipher that operates on data a byte at a time to encrypt that data. RC4 is one of the most commonly used stream ciphers, having been used in Secure Socket Layer (SSL)/ Transport Layer Security (TLS) protocols. 
 RC4 generates a pseudorandom stream of bits (a keystream). As with any stream cipher, these can be used for encryption by combining it with the plaintext using bit-wise exclusive-or; decryption is performed the same way (since exclusive-or is a symmetric operation). (This is similar to the Vernam cipher except that generated pseudorandom bits, rather than a prepared stream, are used.) To generate the keystream, the cipher makes use of a secret internal state which consists of two parts:
