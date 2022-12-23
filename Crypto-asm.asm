@@ -889,9 +889,13 @@ b64_decode  PROC
 		mov len,eax
 		cmp len,0
 		je ret0
+		
+		; to put "/0" at the end of ciphertext
+
 		call b64_decoded_size
 		mov ebx,size64
 		mov [ciphertext+ebx],0
+
         ;lea esi, [ciphertext]
         ;call strlen 
         ;mov out_len ,eax
@@ -901,6 +905,9 @@ b64_decode  PROC
 		; mov ebx,size64
 		; cmp out_len,ebx
 	    ; jg ret0
+		
+		;check that the len of input is Multiples of 4 
+		; if true return 0
 		mov eax,len
 		mov ebx,4
 		mov edx,0
@@ -910,34 +917,48 @@ b64_decode  PROC
 	    mov i,0 
 		mov ecx,len
 	decode_l1:
-         call b64_isvalidchar
+         ;to check the validation of every char 
+          ; if not vaild return 0
+		
+		call b64_isvalidchar
 		 inc i
 		 cmp fvalid,0
 		 je ret0
 		 loop decode_l1
          mov i_dec,0
-	    mov j_dec,0
-	    decode_l2:
-	    mov ebx,0
-	    lea ebx,[plaintext]
+	      mov j_dec,0
+	
+	;;;;;;;;;;;;;;start decoding;;;;;;;;;;;;;;;;;;;
+	;;first is to merge the three values in "v"
+	;;make a 4*6==24bit then it will give 3 values 3*8 of 8 bit 
+	decode_l2:
+	    
+		;v= b64invs[in[i]-43]
+
+		mov ebx,0
+		lea ebx,[plaintext]    
         mov edx,0
 	    mov esi,0
 	    mov si,i_dec
-	    mov dl,[ebx+esi]
+	    mov dl,[ebx+esi]       ;dl=in[i]
 		sub dl,43
-        call b64in 
-	    shl eax,6
+        call b64in    
+	    
+		;;;;;;;v = (v << 6) | b64invs[in[i+1]-43];;;;;;;;
+		shl eax,6       ;;;(v << 6)    
 	    push eax
 	    mov edx,0
 		mov esi,0
 		mov si,i_dec
-		mov dl,[ebx+esi+1]
+		mov dl,[ebx+esi+1]    ;dl=in[i+1]
 		sub edx,43
 		call b64in
 		mov ret_of_b64in,eax
 		pop eax
 		or eax,ret_of_b64in
-        mov edx,0
+        
+	;;;;;;v = in[i+2]=='=' ? v << 6 : (v << 6) | b64invs[in[i+2]-43];;;;;;;;;;;;;;;;;
+		mov edx,0
 		mov esi,0
 		mov si,i_dec
 		mov dl,[ebx+esi+2]
@@ -945,7 +966,8 @@ b64_decode  PROC
 		jne con1_dec
 		shl eax,6
       aft_j1:
-	     mov edx,0
+	     ;;;;;;v = in[i+2]=='=' ? v << 6 : (v << 6) | b64invs[in[i+3]-43];;;;;;;;;;;;;;;;;
+		 mov edx,0
          mov si,i_dec
 		 mov dl,[ebx+esi+3]
 		 cmp edx,'='
@@ -953,6 +975,7 @@ b64_decode  PROC
 		 shl eax,6  
          jmp aft_con 
 	con1_dec:
+	    ;;to get this value (v << 6) | b64invs[in[i+2]-43];
 	     sub edx,43
 		 push eax
 		 call b64in
@@ -962,7 +985,8 @@ b64_decode  PROC
 		 or eax,ret_of_b64in
 		 jmp aft_j1
     con2_dec: 
-	      sub edx,43
+	     ;;to get this value (v << 6) | b64invs[in[i+3]-43];;
+		 sub edx,43
 		 push eax
 		 call b64in
 		 mov ret_of_b64in,eax
@@ -971,16 +995,21 @@ b64_decode  PROC
 		 or eax,ret_of_b64in
  
 	aft_con:
+	;;;;;;;;;;;;;;;;;start to add output;;;;;;;;
+	   
         mov v,eax
 		mov ebx,0
-		 lea ebx,[ciphertext] 	     
-		 shr eax,16
+		lea ebx,[ciphertext] 	     
+		;;(v>> 16) & 0xFF   this shift to get first 8 values 24-16=8
+ 		 shr eax,16
 		 and eax,255
 		 mov esi,0
 		 mov si,j_dec
 		 mov [ebx+esi],eax
 		 mov ebx,0
-		 lea ebx,[plaintext]  
+		;;;;;;;check if (in[i+2] != '=')  if true out[j+1] = (v >> 8) & 0xFF ->  in the label out_con1 ;;;;;;;;;;;
+		
+		lea ebx,[plaintext]  
 		 mov edi,0
 		 mov di,i_dec
 		 push ebx
@@ -990,7 +1019,8 @@ b64_decode  PROC
 		 jne out_con1
  
      ret_from_con1:
-	     mov ebx,0
+	     ;;;;;;;check if (in[i+3] != '=')  if true out[j+1] = (v >> 8) & 0xFF ->  in the label out_con2;;;;;;;;;;;
+		 mov ebx,0
 		 lea ebx,[plaintext] 
          mov edi,0
 		 mov di,i_dec
@@ -1019,7 +1049,8 @@ b64_decode  PROC
 	   mov si,j_dec
 	   mov [ebx+esi+2],eax
 end_of_l2:
-       mov eax,0
+       ;;;; i+=4, j+=3;;;;;;;
+	   mov eax,0
 	   mov ax,i_dec
 	   add eax,4
 	   mov i_dec,ax
@@ -1044,6 +1075,7 @@ end_of_l2:
  
 b64_decode  endp
  b64in PROC
+ ;;;;;;;;;;to check where index is in  the b64invs   we divide it into 3arr first 27 sec 27 ,third 26;;;;;;;;
 	   cmp dl,27
 	   jl value1
 	   cmp edx,54
@@ -1071,7 +1103,7 @@ b64_decode  endp
        mov al,[ecx+edx]
 	   ret
 b64in endp
-
+ 
  
 
 ;-----------------------------
