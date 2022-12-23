@@ -79,7 +79,8 @@ ende_msg byte "Enter 1 to Encode , 2 to Decode .... ",13,10,0
 
 ;base64 outputmsg
 notValidMsg byte "The Input Cannot be Decoded ",10,13,10,13,"! NOT VALID !",10,13,0
-;base64opmsg byte "Here's Your Encoded Text"
+base64openmsg byte "Here's Your Encoded Text",13,10,0
+base64opdemsg byte "Here's Your Decoded Text",13,10,0
 ;base64 choice var
 endeVar DWORD ?
 
@@ -277,11 +278,9 @@ mvopiprot13:mWriteLn " "
 
 
 		   ; op should be moved to ip here
-				;mov eax, OFFSET ciphertext
-				;mov ebx , OFFSET plaintext
-				;call copystr
-
-			mov flag,1
+			; no input should be moved here because rot13 encrypts the input inplace
+			
+			mov flag,1 ; to mark valid operation happened
 
 			jmp another
 
@@ -300,8 +299,9 @@ mvopiprot13:mWriteLn " "
 			call WriteString
 			mWriteLn " "
 			call enorde
-
-oldbaseen64:	mWriteLn "Enter 1 To Use The old output again , or 2 to Use New Input..."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			; this part is to make the user able to use the old output or enter a new one ; this for encoding part
+oldbaseen64:	mWriteLn "Enter 1 To Use The old output again , or 2 to Use New Input..." ; 
 			jmp newbaseen64
 notoldbaseen64:	
 			mWriteLn "Wrong Input Try Again .... "
@@ -313,6 +313,7 @@ newbaseen64:
 			jmp nonewenip
 
 ;;;;;;;;;;;;
+;			; this part is to make the user able to use the old output or enter a new one ; this for decoding part
 oldbasede64:	mWriteLn "Enter 1 To Use The old output again , or 2 to Use New Input..."
 				jmp newbasede64
 
@@ -326,7 +327,11 @@ newbasede64:
 			
 			jmp nonewdeip
 
-			;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this to make the user choose if he wants to encode or decode....
+
+
 noenorde: mWriteLn "Wrong Input Try Again .... "
 						; reading input		
 enorde:					mov ebx , OFFSET endeVar
@@ -349,8 +354,11 @@ normen:		mWriteLn " "
 			mov ecx ,255 ;buffer size - 1 (space for null char ) 
 			call ReadString
 nonewenip:	call base64
-
-			jmp  b64done
+			mWriteln " "
+			mWriteln " "
+			lea edx, base64openmsg ; write encode op msg then jump to done part to print the text
+			call WriteString
+			jmp  b64endone
 
 		  decode:
 			cmp endeVar ,2  ; checking user choice  as if it's 1 , go to printing ascii cond ., if not , prompt badchoice
@@ -375,27 +383,31 @@ nonewdeip:	call  b64_decode
 b64done:   ; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
 					 ; Formmating Output
 					
-					
+			
 					mWriteLn " "
  					mWriteLn " "
-					lea edx , opmsg
+					lea edx , base64opdemsg
 					call WriteString
+b64endone:			mWriteLn " "
+					mWrite "***************************************"
 					mWriteLn " "
-					mWriteLn "***************************************"
 					mWriteLn " "
 					lea edx , ciphertext
 					call WriteString
 					mWriteLn " "
 					mWriteLn " "
-				   mWriteLn"***************************************"
+				   mWrite"***************************************"
 				   mWriteLn " "
-				   	; op should be moved to ip here
+	
+				   mWriteLn " "
+					
+	; op should be moved to ip here ;(to enable ip redirection)
 					mov eax, OFFSET ciphertext
 					mov ebx , OFFSET plaintext
 					call copystr
 
 
-				   mov flag,1
+				   mov flag,1 ; to mark that there was a valid operation 
 	   			   jmp another
 notValidDe:
 				mWriteLn " "
@@ -1094,7 +1106,7 @@ copystr proc
 	cld
 	pusha
 	mov ecx,255
-	l2:
+	l2: ; this loop is to zero the string u wanna copy to , to remove any invalid chars from before
 		mov BYTE PTR [ebx +ecx],0
 		loop l2
 
