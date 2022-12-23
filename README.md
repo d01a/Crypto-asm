@@ -153,6 +153,12 @@ Each Base64 digit can take on 64 different values, encoding 6 bits of data. Whic
 
 <hr>
 
+### Dependencies 
+
+Irvine32 folder should be added to the PATH, For more information [Here](http://asmirvine.com/gettingStartedVS2022/index.htm)
+
+<hr>
+
 ## Team Members
 
 1. [Ibrahim Yasser](https://github.com/ibrahemyasser)
