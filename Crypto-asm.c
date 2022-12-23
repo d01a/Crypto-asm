@@ -198,5 +198,42 @@ char *b64_encode(const unsigned char *in, size_t len)
 }
 
 
+int b64_decode(const char *in, unsigned char *out, size_t outlen)
+{
+	size_t len;
+	size_t i;
+	size_t j;
+	int    v;
+
+	if (in == NULL )
+		return 0;
+
+	len = strlen(in);
+	if (len % 4 != 0)
+		return 0;
+
+	for (i=0; i<len; i++) {
+		if (!b64_isvalidchar(in[i])) {
+			return 0;
+		}
+	}
+
+	for (i=0, j=0; i<len; i+=4, j+=3) {
+		v= b64invs[in[i]-43];
+		v = (v << 6) | b64invs[in[i+1]-43];
+		v = in[i+2]=='=' ? v << 6 : (v << 6) | b64invs[in[i+2]-43];
+		v = in[i+3]=='=' ? v << 6 : (v << 6) | b64invs[in[i+3]-43];
+
+		out[j] = (v >> 16) & 0xFF;
+		if (in[i+2] != '=')
+			out[j+1] = (v >> 8) & 0xFF;
+		if (in[i+3] != '=')
+			out[j+2] = v & 0xFF;
+	}
+
+	return 1;
+}
+
+
 
 
