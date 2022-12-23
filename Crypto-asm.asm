@@ -39,6 +39,7 @@ intNum    DWORD ?
 promptBad BYTE "Invalid input, please enter again",13,10,0
 ;again var
 flag byte 0
+flag1 byte 0
 
 ; again 
 againVar DWORD ?
@@ -74,8 +75,11 @@ ipkey1 byte "Please Enter The New Key....",13,10,0
 
 ;base64 ipmsg ; choice msg 
 base64msg byte "Do you Wanna Encode or Decode ? ",13,10,0
-ende_msg byte "Enter 0 to Encode , 1 to Decode .... ",13,10,0
+ende_msg byte "Enter 1 to Encode , 2 to Decode .... ",13,10,0
 
+;base64 outputmsg
+notValidMsg byte "The Input Cannot be Decoded ",10,13,10,13,"! NOT VALID !",10,13,0
+;base64opmsg byte "Here's Your Encoded Text"
 ;base64 choice var
 endeVar DWORD ?
 
@@ -134,7 +138,7 @@ newrc4:		mov ebx , OFFSET againVar
 
 			cmp againVar ,2
 			jne mvopiprc4
-normalrc4:		lea edx , ipstr
+normalrc4:	lea edx , ipstr
 			mWriteLn " "
 			call WriteString
 			mWriteLn " "
@@ -151,11 +155,11 @@ mvopiprc4:
 			mov eax, OFFSET ciphertext
 			mov ebx , OFFSET plaintext
 			call copystr
-				
-			
+				lea edx , ipkey1
 
 
-     	    lea edx , ipkey1
+
+
 nomvrc4:		mWriteLn " "
 			call WriteString
 			mWriteLn " "
@@ -273,9 +277,9 @@ mvopiprot13:mWriteLn " "
 
 
 		   ; op should be moved to ip here
-				mov eax, OFFSET ciphertext
-				mov ebx , OFFSET plaintext
-				call copystr
+				;mov eax, OFFSET ciphertext
+				;mov ebx , OFFSET plaintext
+				;call copystr
 
 			mov flag,1
 
@@ -297,38 +301,75 @@ mvopiprot13:mWriteLn " "
 			mWriteLn " "
 			call enorde
 
+oldbaseen64:	mWriteLn "Enter 1 To Use The old output again , or 2 to Use New Input..."
+			jmp newbaseen64
+notoldbaseen64:	
+			mWriteLn "Wrong Input Try Again .... "
+newbaseen64:		
+			mov ebx , OFFSET againVar
+			call reading
+			cmp againVar,1
+			jne newenbase64
+			jmp nonewenip
+
+;;;;;;;;;;;;
+oldbasede64:	mWriteLn "Enter 1 To Use The old output again , or 2 to Use New Input..."
+				jmp newbasede64
+
+notoldbasede64:	
+			mWriteLn "Wrong Input Try Again .... "
+newbasede64:		
+			mov ebx , OFFSET againVar
+			call reading
+			cmp againVar,1
+			jne newdebase64
+			
+			jmp nonewdeip
+
+			;;;;;;;;;;;;;;
 noenorde: mWriteLn "Wrong Input Try Again .... "
 						; reading input		
 enorde:					mov ebx , OFFSET endeVar
 						call reading
-
-
+;;;;;;;;;;;;;;;
 	   ; checking user choice ;( if 0 , call Encode Function )
-			cmp endeVar , 0
+			lea edx,endeVar
+			cmp endeVar , 1
 			jne decode  ; (if not 0 -"means 1 in this case"- go to Decode Function )
-			mWriteLn " "
+			cmp flag ,1 
+			je oldbaseen64
+			jmp normen
+newenbase64: cmp againVar ,2
+			jne notoldbaseen64
+normen:		mWriteLn " "
 			mWriteLn " "		
 			mWriteLn "Enter the Text You Wanna Encode.... "
 			mWriteLn " "
-			lea edx , input ; putting the input buffer address into edx to call Read String
+			lea edx , plaintext ; putting the input buffer address into edx to call Read String
 			mov ecx ,255 ;buffer size - 1 (space for null char ) 
 			call ReadString
-			call base64
+nonewenip:	call base64
 
 			jmp  b64done
 
 		  decode:
-			cmp endeVar ,1  ; checking user choice  as if it's 1 , go to printing ascii cond ., if not , prompt badchoice
+			cmp endeVar ,2  ; checking user choice  as if it's 1 , go to printing ascii cond ., if not , prompt badchoice
 			jne noenorde ; if the user entered a value other than 0,1  just go and prompt "Bad Prompt" and ask again for the input
-			mWriteLn " "
+			cmp flag ,1 
+			je oldbasede64
+			jmp normde
+newdebase64: cmp againVar ,2
+			jne notoldbasede64
+normde:		mWriteLn " "
 			mWriteLn "Enter the Text You Wanna Decode.... "
 			mWriteLn " "
-			lea edx , input ; same as base64msg
+			lea edx , plaintext ; same as base64msg
 			mov ecx ,255 ;buffer size - 1 (space for null char )
 			call ReadString
-			call  b64_decode
 
-
+nonewdeip:	call  b64_decode
+			cmp ret_of_decode , 1
+			jne notValidDe
 
      
 b64done:   ; some formmating and after finishing it jumps to ("another" label)  to ask the user if another alg. is needed
@@ -349,10 +390,21 @@ b64done:   ; some formmating and after finishing it jumps to ("another" label)  
 				   mWriteLn"***************************************"
 				   mWriteLn " "
 				   	; op should be moved to ip here
-					; to be done
-				
+					mov eax, OFFSET ciphertext
+					mov ebx , OFFSET plaintext
+					call copystr
+
+
 				   mov flag,1
-	   		jmp another
+	   			   jmp another
+notValidDe:
+				mWriteLn " "
+ 				mWriteLn " "
+				lea edx , notValidMsg
+				call WriteString
+				mWriteLn " "
+ 				mWriteLn " "
+				jmp oldbasede64
 		
 		elseifbranch3: ; if input is 4 , then exit
 			cmp intNum , 4
@@ -519,6 +571,7 @@ RC4_Output PROC
 		mov [esi + edx],al				;ciphertext[n] = S[(S[i] + S[j]) & 255] ^ plaintext[n]
 		inc dx							;n++	
 		cmp dl,plain_Length				;check if n-len=0 if so we will not jump to L_Out and this loop exit
+		
 		jnz L_Out
 		ret
 
@@ -614,8 +667,8 @@ base64 proc
 
 		call to64Size
 		mov eax,size64				
-		mov [output + eax] ,0		
-		lea esi, input
+		mov [ciphertext + eax] ,0		
+		lea esi, plaintext
 
 		call strlen
 		mov ecx ,eax
@@ -626,12 +679,12 @@ base64 proc
 	l1:
 		cmp eax, len
 		jge l3
-		mov dl,[input +eax]
+		mov dl,[plaintext +eax]
 		inc eax
 		cmp eax, len
 		jge shiftl1
 		shl edx,8
-		mov dl, [input +eax]
+		mov dl, [plaintext +eax]
 		jmp noshiftl1
 	shiftl1:
 		shl edx ,8
@@ -640,7 +693,7 @@ base64 proc
 		cmp eax, len
 		jge shiftl2
 		shl edx,8
-		mov dl,[input +eax]
+		mov dl,[plaintext +eax]
 		jmp noShiftl2
 	shiftl2:
 		shl edx ,8
@@ -649,13 +702,13 @@ base64 proc
 		shr edx,18
 		and edx,3fh
 		mov cl ,[b64chars + edx ]
-		mov [output + ebx],cl
+		mov [ciphertext + ebx],cl
 		inc ebx
 		mov edx, b3
 		shr edx,12
 		and edx,3fh
 		mov cl ,[b64chars + edx ]
-		mov [output + ebx],cl
+		mov [ciphertext + ebx],cl
 		inc ebx
 		sub eax,1
 		cmp eax,len
@@ -664,10 +717,10 @@ base64 proc
 		shr edx, 6
 		and edx, 3fh
 		mov cl ,[b64chars + edx ]
-		mov [output + ebx],cl
+		mov [ciphertext + ebx],cl
 		jmp endEqualSign1
 	equalSign1:
-		mov [output + ebx], '='
+		mov [ciphertext + ebx], '='
 	endEqualSign1:
 		inc ebx
 		inc eax
@@ -676,10 +729,10 @@ base64 proc
 		mov edx, b3
 		and edx, 3fh
 		mov cl ,[b64chars + edx]
-		mov [output + ebx],cl
+		mov [ciphertext + ebx],cl
 		jmp endEqualSign2
 	equalSign2:
-		mov [output + ebx], '='
+		mov [ciphertext + ebx], '='
 	endEqualSign2:
 		inc eax
 		inc ebx
@@ -691,7 +744,7 @@ base64 endp
 
 to64Size proc
 		pusha
-		mov eax ,LENGTHOF input
+		mov eax ,LENGTHOF plaintext
 		sub eax, 1
 		mov ebx, 3
 		xor edx, edx  
@@ -702,7 +755,7 @@ to64Size proc
 		mul ebx
 		jmp sizeEnd
 	inc3:
-		mov eax ,LENGTHOF input
+		mov eax ,LENGTHOF plaintext
 		sub eax, 1
 		add eax ,3
 		sub eax, edx
@@ -715,11 +768,13 @@ to64Size proc
 		mov size64,eax
 		popa
 to64Size endp
+
+
 b64_decoded_size PROC
-                lea esi, [input]
+                lea esi, [plaintext]
 		call strlen
 		
-		;len = strlen(input)
+		;len = strlen(plaintext)
 		
 		mov ecx ,eax
 		mov len, ecx
@@ -744,9 +799,9 @@ b64_decoded_size PROC
 	dsize_l1:
 	        dec ecx
 	    
-		;if(input[i]== '=')
+		;if(plaintext[i]== '=')
 
-		cmp [ecx+input],dl
+		cmp [ecx+plaintext],dl
 		
 		;go to ret-- if z flag which mean it equal '='
 
@@ -767,18 +822,65 @@ b64_decoded_size PROC
               mov size64,eax 
 	      ret     
 b64_decoded_size endp
+
+b64_isvalidchar PROC
+           pusha
+	   mov ecx,0
+	   mov edx, 0
+	   mov cx,i
+	   mov dl,[plaintext+ecx]
+	   cmp edx, '0'
+	   jl con2
+	   cmp edx, '9' 
+	   jg con2
+	   
+	   jmp ret_b64_isvalidchar
+     con2:  
+	   cmp edx, 'A'
+	   jl con3
+	   cmp edx, 'Z'
+	   jg con3
+
+	   jmp ret_b64_isvalidchar
+	   con3:
+           cmp edx, 'a'
+	   jl con4
+	   cmp edx, 'z'
+	   jg con4
+
+
+	   jmp ret_b64_isvalidchar
+	   con4:
+	   cmp edx,'='
+	   je ret_b64_isvalidchar 
+           cmp edx,'+'
+	   je ret_b64_isvalidchar
+	   cmp edx,'/'
+	   je ret_b64_isvalidchar
+	   
+	else_b64_isvalidchar:
+	   mov fvalid,0
+	   popa
+	   ret
+
+	ret_b64_isvalidchar:
+	   mov fvalid,1
+	   popa
+	   ret
+    b64_isvalidchar endp
 b64_decode  PROC
     push ebp				  
     mov ebp, esp
-        lea esi, [input]
-		call strlen             ;len = strlen(input)
+		mov ciphertext ,0
+        lea esi, [plaintext]
+		call strlen             ;len = strlen(plaintext)
 		mov len,eax
 		cmp len,0
 		je ret0
 		call b64_decoded_size
 		mov ebx,size64
-		mov [output+ebx],0
-        ;lea esi, [output]
+		mov [ciphertext+ebx],0
+        ;lea esi, [ciphertext]
         ;call strlen 
         ;mov out_len ,eax
         ;cmp out_len,0          	
@@ -805,7 +907,7 @@ b64_decode  PROC
 	    mov j_dec,0
 	    decode_l2:
 	    mov ebx,0
-	    lea ebx,[input]
+	    lea ebx,[plaintext]
         mov edx,0
 	    mov esi,0
 	    mov si,i_dec
@@ -859,14 +961,14 @@ b64_decode  PROC
 	aft_con:
         mov v,eax
 		mov ebx,0
-		 lea ebx,[output] 	     
+		 lea ebx,[ciphertext] 	     
 		 shr eax,16
 		 and eax,255
 		 mov esi,0
 		 mov si,j_dec
 		 mov [ebx+esi],eax
 		 mov ebx,0
-		 lea ebx,[input]  
+		 lea ebx,[plaintext]  
 		 mov edi,0
 		 mov di,i_dec
 		 push ebx
@@ -877,7 +979,7 @@ b64_decode  PROC
  
      ret_from_con1:
 	     mov ebx,0
-		 lea ebx,[input] 
+		 lea ebx,[plaintext] 
          mov edi,0
 		 mov di,i_dec
 		 push ebx
@@ -891,7 +993,7 @@ b64_decode  PROC
 	   shr eax,8
 	   and eax,255
 	   mov ebx,0
-	   lea ebx,[output]  	
+	   lea ebx,[ciphertext]  	
 	   mov esi,0
 	   mov si,j_dec
 	   mov [ebx+esi+1],eax
@@ -900,7 +1002,7 @@ b64_decode  PROC
        mov eax,v
 	   and eax,255
 	   mov ebx,0
-	  lea ebx,[output] 
+	  lea ebx,[ciphertext] 
 	   mov esi,0
 	   mov si,j_dec
 	   mov [ebx+esi+2],eax
@@ -990,17 +1092,18 @@ reading endp
 ;-----------------------------
 copystr proc
 	cld
-	push esi
-	push ecx
-	push edi
+	pusha
+	mov ecx,255
+	l2:
+		mov BYTE PTR [ebx +ecx],0
+		loop l2
+
 	mov esi , eax
 	call strlen
 	movzx ecx, al
 	mov edi , ebx 
 	rep  movsb
-	pop edi
-	pop ecx 
-	pop esi
+	popa
 	ret
 
 copystr endp
