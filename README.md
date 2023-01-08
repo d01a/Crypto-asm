@@ -164,6 +164,6 @@ Irvine32 folder should be added to the PATH, For more information [Here](http://
 1. [Ibrahim Yasser](https://github.com/ibrahemyasser)
 2. [Ahmed Sayed](https://github.com/ahmed1958)
 3. [Ahmed Mohammed Awwad](https://github.com/Ahmed-Awwad99)
-4. [Ahmed Mohammed Ali](https://github.com/ahmedmalii)
+4. [Ahmed Mohammed Ali](https://github.com/ahmedaliv)
 5. [Mohamed Adel](https://github.com/d01a)
 
